@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
-//Access GPS data
+// Access GPS data
 class GpsService {
+  // Get the position stream
   static Stream<Position> getPositionStream() {
     return Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -9,10 +10,12 @@ class GpsService {
       ),
     );
   }
-
+  // Get the current position
   static Future<Position?> getCurrentPosition() async {
     return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+      ),
     );
   }
 }

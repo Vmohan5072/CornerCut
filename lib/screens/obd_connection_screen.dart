@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:logger/logger.dart';
 import '../services/bluetooth_service.dart';
 import '../services/permission_service.dart';
 
 class ObdConnectionScreen extends StatefulWidget {
+  const ObdConnectionScreen({super.key});
+
   @override
-  _ObdConnectionScreenState createState() => _ObdConnectionScreenState();
+  ObdConnectionScreenState createState() => ObdConnectionScreenState();
 }
 
-class _ObdConnectionScreenState extends State<ObdConnectionScreen> {
+class ObdConnectionScreenState extends State<ObdConnectionScreen> {
   List<BluetoothDevice> _devices = [];
   final BluetoothService _bluetoothService = BluetoothService();
+  final Logger logger = Logger();
 
   @override
   void initState() {
@@ -18,29 +22,45 @@ class _ObdConnectionScreenState extends State<ObdConnectionScreen> {
     initBluetooth();
   }
 
+  // Initialize Bluetooth and request permission
   void initBluetooth() async {
     bool hasPermission = await PermissionService.requestBluetoothPermission();
     if (hasPermission) {
       _getBondedDevices();
     } else {
-      print('Bluetooth permission denied');
+      logger.w('Bluetooth permission denied');
+      // Show a SnackBar to inform the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bluetooth permission denied')),
+      );
     }
   }
 
+  // Get bonded Bluetooth devices
   void _getBondedDevices() async {
     try {
       List<BluetoothDevice> devices = await FlutterBluetoothSerial.instance.getBondedDevices();
       setState(() {
         _devices = devices;
+        logger.d('Bonded devices: $_devices');
       });
     } catch (e) {
-      print('Error getting bonded devices: $e');
+      logger.e('Error getting bonded devices: $e');
+      // Show a SnackBar to inform the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting devices: $e')),
+      );
     }
   }
 
+  // Connect to selected Bluetooth device
   void _connectToDevice(BluetoothDevice device) async {
-    await _bluetoothService.connectToDevice(device.address);
-    // Handle connection success or failure
+    logger.i('Connecting to device: ${device.name ?? 'Unknown Device'}');
+    await _bluetoothService.connectToDevice(device.address, context); // Passed context
+    // Show a SnackBar to inform the user
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Connected to ${device.name ?? 'Device'}')),
+    );
   }
 
   @override
@@ -52,17 +72,22 @@ class _ObdConnectionScreenState extends State<ObdConnectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text('Connect to OBD-II Device'),
-        ),
-        body: ListView(
-          children: _devices
-              .map((device) => ListTile(
-                    title: Text(device.name ?? 'Unknown Device'),
-                    subtitle: Text(device.address),
-                    onTap: () => _connectToDevice(device),
-                  ))
-              .toList(),
-        ));
+      appBar: AppBar(
+        title: const Text('Connect to OBD-II Device'),
+      ),
+      body: _devices.isNotEmpty
+          ? ListView(
+              children: _devices
+                  .map((device) => ListTile(
+                        title: Text(device.name ?? 'Unknown Device'),
+                        subtitle: Text(device.address),
+                        onTap: () => _connectToDevice(device),
+                      ))
+                  .toList(),
+            )
+          : const Center(
+              child: CircularProgressIndicator(),
+            ),
+    );
   }
 }

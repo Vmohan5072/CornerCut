@@ -2,30 +2,36 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 
 class LapTimer extends StatefulWidget {
+  const LapTimer({super.key});
+
   @override
-  _LapTimerState createState() => _LapTimerState();
+  LapTimerState createState() => LapTimerState();
 }
 
-class _LapTimerState extends State<LapTimer> {
-  Stopwatch _stopwatch = Stopwatch();
+class LapTimerState extends State<LapTimer> {
+  final Stopwatch _stopwatch = Stopwatch();
   Timer? _timer;
-  List<Duration> _laps = [];
+  final List<Duration> _laps = [];
 
   void _startStopwatch() {
-    _stopwatch.start();
-    _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
-      setState(() {});
+    setState(() {
+      _stopwatch.start();
+      _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
+        setState(() {});
+      });
     });
   }
 
   void _stopStopwatch() {
-    _stopwatch.stop();
-    _timer?.cancel();
+    setState(() {
+      _stopwatch.stop();
+      _timer?.cancel();
+    });
   }
 
   void _resetStopwatch() {
-    _stopwatch.reset();
     setState(() {
+      _stopwatch.reset();
       _laps.clear();
     });
   }
@@ -38,11 +44,9 @@ class _LapTimerState extends State<LapTimer> {
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final minutes = twoDigits(duration.inMinutes);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
-    final milliseconds = (duration.inMilliseconds.remainder(1000) ~/ 10)
-        .toString()
-        .padLeft(2, '0');
+    final milliseconds = twoDigits(duration.inMilliseconds.remainder(1000) ~/ 10);
     return '$minutes:$seconds.$milliseconds';
   }
 
@@ -76,7 +80,8 @@ class _LapTimerState extends State<LapTimer> {
           ],
         ),
         const SizedBox(height: 20),
-        Expanded(
+        SizedBox(
+          height: 150,
           child: ListView.builder(
             itemCount: _laps.length,
             itemBuilder: (context, index) {
