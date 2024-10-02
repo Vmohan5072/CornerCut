@@ -1,0 +1,119 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+.flutter/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Android-specific
+/android/.gradle/
+/android/.idea/
+/android/captures/
+/android/local.properties
+
+# iOS-specific
+ios/Pods/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.xcworkspace/
+ios/Flutter/Flutter.podspec.json
+ios/Flutter/Flutter.podspec.lock
+
+# macOS-specific
+/macos/Flutter/ephemeral/
+/macos/.symlinks/
+/macos/Flutter/Flutter.podspec
+macos/Flutter/Flutter.framework
+
+# Web-specific files
+web/.dart_tool/
+/web/manifest.json
+
+# Windows-specific files
+/windows/.dart_tool/
+windows/flutter/ephemeral
+
+# Linux-specific files
+/linux/flutter/ephemeral
+/linux/.dart_tool/
+
+# JetBrains IDE files (IntelliJ, PyCharm, Android Studio, etc.)
+.idea/
+*.iml
+
+# VS Code files
+.vscode/
+.settings/
+.history/
+
+# Xcode-related files
+*.xcworkspace
+*.xcodeproj
+*.xcuserstate
+
+# macOS Finder
+.DS_Store
+
+# Generated files by CocoaPods (for iOS and macOS)
+ios/Pods/
+macos/Pods/
+
+# Generated XCFrameworks
+**/Flutter.xcframework/
+
+# Temporary files created by the system or development tools
+*.tmp
+*.temp
+*.bak
+
+# Flutter pubspec.lock for libraries (not apps)
+pubspec.lock
+
+# Debug files and logs
+debug.log
+error.log
+
+# Logs from third-party services
+*.log
