@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 class TelemetryData {
   final double speed; // in mph
   final double rpm;
+  final double throttle; // in percentage
+  final double brake; // in percentage
   final DateTime timestamp;
 
   TelemetryData({
     required this.speed,
     required this.rpm,
+    required this.throttle,
+    required this.brake,
     required this.timestamp,
   });
 }
@@ -17,10 +21,17 @@ class TelemetryModel with ChangeNotifier {
 
   List<TelemetryData> get dataPoints => _dataPoints;
 
-  void updateTelemetry(double speed, double rpm) {
+  void updateTelemetry({
+    required double speed,
+    required double rpm,
+    required double throttle,
+    required double brake,
+  }) {
     final dataPoint = TelemetryData(
       speed: speed,
       rpm: rpm,
+      throttle: throttle,
+      brake: brake,
       timestamp: DateTime.now().toUtc(),
     );
     _dataPoints.add(dataPoint);

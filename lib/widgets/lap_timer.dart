@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
+import '../models/lap_model.dart';
 
 class LapTimer extends StatefulWidget {
   const LapTimer({super.key});
@@ -12,7 +14,6 @@ class LapTimer extends StatefulWidget {
 class LapTimerState extends State<LapTimer> {
   final Stopwatch _stopwatch = Stopwatch();
   Timer? _timer;
-  final List<Duration> _laps = [];
   final Logger logger = Logger();
 
   void _startStopwatch() {
@@ -36,15 +37,18 @@ class LapTimerState extends State<LapTimer> {
   void _resetStopwatch() {
     setState(() {
       _stopwatch.reset();
-      _laps.clear();
+      Provider.of<LapModel>(context, listen: false).resetLapTimes();
       logger.i('Stopwatch reset');
     });
   }
 
   void _recordLap() {
+    final lapTime = _stopwatch.elapsed;
     setState(() {
-      _laps.add(_stopwatch.elapsed);
-      logger.i('Lap recorded: ${_stopwatch.elapsed}');
+      Provider.of<LapModel>(context, listen: false).addLapTime(lapTime);
+      _stopwatch.reset();
+      _stopwatch.start();
+      logger.i('Lap recorded: $lapTime');
     });
   }
 
@@ -58,6 +62,7 @@ class LapTimerState extends State<LapTimer> {
 
   @override
   Widget build(BuildContext context) {
+    final lapModel = Provider.of<LapModel>(context);
     final elapsedTime = _formatDuration(_stopwatch.elapsed);
 
     return Column(
@@ -88,9 +93,9 @@ class LapTimerState extends State<LapTimer> {
         SizedBox(
           height: 150,
           child: ListView.builder(
-            itemCount: _laps.length,
+            itemCount: lapModel.lapTimes.length,
             itemBuilder: (context, index) {
-              final lapTime = _formatDuration(_laps[index]);
+              final lapTime = _formatDuration(lapModel.lapTimes[index]);
               return ListTile(
                 title: Text('Lap ${index + 1}'),
                 trailing: Text(lapTime),

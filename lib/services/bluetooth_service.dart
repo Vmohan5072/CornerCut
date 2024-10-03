@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../models/telemetry_model.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:intl/intl.dart';
 
 class BluetoothService {
   BluetoothConnection? connection;
@@ -58,13 +57,20 @@ class BluetoothService {
 
   // Process received data and update telemetry
   void _processReceivedData(String data, BuildContext context) {
-    // Example data format: "SPEED:60 RPM:3000"
+    // Example data format: "SPEED:60 RPM:3000 THROTTLE:45 BRAKE:0"
     double speed = parseSpeed(data);
     double rpm = parseRPM(data);
+    double throttle = parseThrottle(data);
+    double brake = parseBrake(data);
 
-    if (speed > 0 || rpm > 0) {
-      Provider.of<TelemetryModel>(context, listen: false).updateTelemetry(speed, rpm);
-      logger.i('Telemetry updated - Speed: $speed mph, RPM: $rpm');
+    if (speed >= 0 && rpm >= 0 && throttle >= 0 && brake >= 0) {
+      Provider.of<TelemetryModel>(context, listen: false).updateTelemetry(
+        speed: speed,
+        rpm: rpm,
+        throttle: throttle,
+        brake: brake,
+      );
+      logger.i('Telemetry updated - Speed: $speed mph, RPM: $rpm, Throttle: $throttle%, Brake: $brake%');
     } else {
       logger.w('Received invalid telemetry data: $data');
     }
@@ -78,7 +84,7 @@ class BluetoothService {
       double speedInKmh = double.parse(match.group(1)!);
       return speedInKmh * 0.621371; // Convert km/h to mph
     }
-    return 0.0;
+    return -1.0;
   }
 
   // Parse RPM from data string
@@ -88,6 +94,26 @@ class BluetoothService {
     if (match != null && match.groupCount >= 1) {
       return double.parse(match.group(1)!);
     }
-    return 0.0;
+    return -1.0;
+  }
+
+  // Parse throttle angle percentage from data string
+  double parseThrottle(String data) {
+    RegExp throttleRegex = RegExp(r'THROTTLE:(\d+(\.\d+)?)');
+    Match? match = throttleRegex.firstMatch(data);
+    if (match != null && match.groupCount >= 1) {
+      return double.parse(match.group(1)!);
+    }
+    return -1.0;
+  }
+
+  // Parse brake percentage from data string
+  double parseBrake(String data) {
+    RegExp brakeRegex = RegExp(r'BRAKE:(\d+(\.\d+)?)');
+    Match? match = brakeRegex.firstMatch(data);
+    if (match != null && match.groupCount >= 1) {
+      return double.parse(match.group(1)!);
+    }
+    return -1.0;
   }
 }

@@ -1,10 +1,10 @@
-// lib/screens/video_player_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../models/telemetry_model.dart';
+import '../models/lap_model.dart';
+import '../widgets/overlay_widgets.dart';
 import 'dart:io';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
@@ -139,11 +139,20 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _logger.i('VideoPlayerController disposed.');
   }
 
+  String _formatDuration(Duration? duration) {
+    if (duration == null) return '--:--.--';
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    final milliseconds =
+        twoDigits(duration.inMilliseconds.remainder(1000) ~/ 10);
+    return '$minutes:$seconds.$milliseconds';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Access telemetry data from Provider
-    // final telemetry = Provider.of<TelemetryModel>(context);
     final telemetryData = _currentTelemetryData;
+    final lapModel = Provider.of<LapModel>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -174,25 +183,54 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
               bottom: 80, // Adjusted to make space for slider
               left: 20,
               right: 20,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                color: Colors.black54,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Speed: ${telemetryData.speed.toStringAsFixed(2)} mph',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 16),
+              child: Column(
+                children: [
+                  // Gauges Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: SpeedometerGauge(speed: telemetryData.speed),
+                      ),
+                      SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: TachometerGauge(rpm: telemetryData.rpm),
+                      ),
+                      ThrottleBrakeIndicator(
+                        throttle: telemetryData.throttle,
+                        brake: telemetryData.brake,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  // Lap Times
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    color: Colors.black54,
+                    child: Column(
+                      children: [
+                        Text(
+                          'Best Lap: ${_formatDuration(lapModel.bestLapTime)}',
+                          style:
+                              const TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        Text(
+                          'Current Lap: ${_formatDuration(lapModel.currentLapTime)}',
+                          style:
+                              const TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        Text(
+                          'Previous Lap: ${_formatDuration(lapModel.previousLapTime)}',
+                          style:
+                              const TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'RPM: ${telemetryData.rpm.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 16),
-                    ),
-                    // Add more telemetry data here if needed
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           // Time Offset Slider

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'models/telemetry_model.dart';
+import 'models/lap_model.dart';
 import 'screens/home_screen.dart';
 import 'screens/obd_connection_screen.dart';
 import 'screens/video_selection_screen.dart';
@@ -10,6 +11,8 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TelemetryModel()),
+        ChangeNotifierProvider(create: (_) => LapModel()),
+        // Add other providers here if needed
       ],
       child: const MyApp(),
     ),
