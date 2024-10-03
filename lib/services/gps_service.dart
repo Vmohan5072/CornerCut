@@ -1,5 +1,5 @@
 import 'package:geolocator/geolocator.dart';
-// Access GPS data
+
 class GpsService {
   // Get the position stream
   static Stream<Position> getPositionStream() {

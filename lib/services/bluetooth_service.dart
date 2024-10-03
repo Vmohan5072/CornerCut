@@ -5,25 +5,24 @@ import 'package:provider/provider.dart';
 import '../models/telemetry_model.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:intl/intl.dart';
 
 class BluetoothService {
   BluetoothConnection? connection;
   final Logger logger = Logger();
 
+  // Connect to the OBD-II device with address and context
   Future<void> connectToDevice(String address, BuildContext context) async {
     try {
       connection = await BluetoothConnection.toAddress(address);
-      logger.i('Connected to the OBD-II device');
+      logger.i('Connected to the OBD-II device at $address');
+
+      // Listen to incoming data
       connection!.input!.listen((Uint8List data) {
-        String receivedData = String.fromCharCodes(data);
+        String receivedData = String.fromCharCodes(data).trim();
         logger.d('Data received: $receivedData');
 
-        // Example: Parse the receivedData to extract speed and rpm
-        double speed = parseSpeed(receivedData);
-        double rpm = parseRPM(receivedData);
-
-        // Update the TelemetryModel
-        Provider.of<TelemetryModel>(context, listen: false).updateTelemetry(speed, rpm);
+        _processReceivedData(receivedData, context);
       }).onDone(() {
         logger.w('OBD-II device disconnected');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -38,20 +37,42 @@ class BluetoothService {
     }
   }
 
+  // Disconnect from the OBD-II device
   void disconnect() {
-    connection?.close();
-    connection = null;
-    logger.i('Disconnected from the OBD-II device');
+    if (connection != null) {
+      connection!.close();
+      logger.i('Disconnected from the OBD-II device');
+      connection = null;
+    }
   }
 
+  // Send data to the OBD-II device
   void sendData(String data) {
-    connection?.output.add(Uint8List.fromList(data.codeUnits));
-    logger.d('Data sent: $data');
+    if (connection != null && connection!.isConnected) {
+      connection!.output.add(Uint8List.fromList(data.codeUnits));
+      logger.d('Data sent: $data');
+    } else {
+      logger.w('Attempted to send data while not connected');
+    }
   }
 
-  // Parse speed from OBD-II data and convert from km/h to mph
+  // Process received data and update telemetry
+  void _processReceivedData(String data, BuildContext context) {
+    // Example data format: "SPEED:60 RPM:3000"
+    double speed = parseSpeed(data);
+    double rpm = parseRPM(data);
+
+    if (speed > 0 || rpm > 0) {
+      Provider.of<TelemetryModel>(context, listen: false).updateTelemetry(speed, rpm);
+      logger.i('Telemetry updated - Speed: $speed mph, RPM: $rpm');
+    } else {
+      logger.w('Received invalid telemetry data: $data');
+    }
+  }
+
+  // Parse speed from data string and convert from km/h to mph
   double parseSpeed(String data) {
-    RegExp speedRegex = RegExp(r'SPEED:(\d+)');
+    RegExp speedRegex = RegExp(r'SPEED:(\d+(\.\d+)?)');
     Match? match = speedRegex.firstMatch(data);
     if (match != null && match.groupCount >= 1) {
       double speedInKmh = double.parse(match.group(1)!);
@@ -60,8 +81,9 @@ class BluetoothService {
     return 0.0;
   }
 
+  // Parse RPM from data string
   double parseRPM(String data) {
-    RegExp rpmRegex = RegExp(r'RPM:(\d+)');
+    RegExp rpmRegex = RegExp(r'RPM:(\d+(\.\d+)?)');
     Match? match = rpmRegex.firstMatch(data);
     if (match != null && match.groupCount >= 1) {
       return double.parse(match.group(1)!);

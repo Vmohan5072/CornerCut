@@ -6,6 +6,9 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../models/telemetry_model.dart';
 import 'dart:io';
+import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter/return_code.dart';
+import 'package:intl/intl.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoPath;
@@ -23,13 +26,19 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   late VideoPlayerController _controller;
   final Logger _logger = Logger();
   bool _isOverlayVisible = true;
+  DateTime? _videoStartTime;
+  double _timeOffset = 0.0; // Time offset in seconds
+
+  TelemetryData? _currentTelemetryData;
 
   @override
   void initState() {
     super.initState();
     _initializeVideo();
+    _extractVideoStartTime();
   }
 
+  // Initialize the VideoPlayerController
   void _initializeVideo() {
     _controller = VideoPlayerController.file(
       File(widget.videoPath),
@@ -40,18 +49,73 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           _controller.setLooping(false);
         });
         _logger.i('Video initialized and playing.');
+        _controller.addListener(_updateTelemetryData);
       }).catchError((error) {
         _logger.e('Error initializing video: $error');
       });
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-    _logger.i('VideoPlayerController disposed.');
+  // Extract the video's start time using FFmpeg
+  void _extractVideoStartTime() async {
+    String command =
+        "-i \"${widget.videoPath}\" -f ffmetadata -"; // FFmpeg command to get metadata
+    _logger.d('Executing FFmpeg command: $command');
+
+    await FFmpegKit.executeAsync(command, (session) async {
+      final returnCode = await session.getReturnCode();
+      if (ReturnCode.isSuccess(returnCode)) {
+        final output = await session.getOutput();
+        _logger.d('FFmpeg output: $output');
+
+        // Parse the output to find the creation_time
+        RegExp regExp = RegExp(r'creation_time\s*:\s*(.*)');
+        Match? match = regExp.firstMatch(output ?? '');
+
+        if (match != null) {
+          String creationTimeStr = match.group(1)!;
+          _logger.d('Video creation time: $creationTimeStr');
+
+          // Parse the creation time string into DateTime
+          DateTime? creationTime = DateTime.tryParse(creationTimeStr);
+
+          if (creationTime != null) {
+            setState(() {
+              _videoStartTime = creationTime.toUtc();
+            });
+            _logger.i('Video start time set: $_videoStartTime');
+          } else {
+            _logger.e('Failed to parse creation time.');
+          }
+        } else {
+          _logger.e('creation_time not found in metadata.');
+        }
+      } else {
+        _logger.e('FFmpeg command failed with return code: $returnCode');
+      }
+    });
   }
 
+  // Update telemetry data based on video playback position
+  void _updateTelemetryData() {
+    if (_videoStartTime != null) {
+      final videoPosition = _controller.value.position;
+      final adjustedVideoTime = _videoStartTime!.add(
+        Duration(
+          milliseconds:
+              (videoPosition.inMilliseconds + (_timeOffset * 1000).toInt()),
+        ),
+      );
+
+      final telemetry = Provider.of<TelemetryModel>(context, listen: false);
+      final dataPoint = telemetry.getTelemetryAt(adjustedVideoTime);
+
+      setState(() {
+        _currentTelemetryData = dataPoint;
+      });
+    }
+  }
+
+  // Toggle the visibility of the telemetry overlay
   void _toggleOverlay() {
     setState(() {
       _isOverlayVisible = !_isOverlayVisible;
@@ -59,10 +123,27 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _logger.d('Telemetry overlay visibility toggled: $_isOverlayVisible');
   }
 
+  // Update the time offset based on user input
+  void _updateTimeOffset(double value) {
+    setState(() {
+      _timeOffset = value;
+    });
+    _logger.d('Time offset updated to: $_timeOffset seconds');
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_updateTelemetryData);
+    _controller.dispose();
+    super.dispose();
+    _logger.i('VideoPlayerController disposed.');
+  }
+
   @override
   Widget build(BuildContext context) {
     // Access telemetry data from Provider
-    final telemetry = Provider.of<TelemetryModel>(context);
+    // final telemetry = Provider.of<TelemetryModel>(context);
+    final telemetryData = _currentTelemetryData;
 
     return Scaffold(
       appBar: AppBar(
@@ -87,9 +168,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   )
                 : const CircularProgressIndicator(),
           ),
-          if (_isOverlayVisible)
+          // Telemetry Overlay
+          if (_isOverlayVisible && telemetryData != null)
             Positioned(
-              bottom: 20,
+              bottom: 80, // Adjusted to make space for slider
               left: 20,
               right: 20,
               child: Container(
@@ -99,25 +181,55 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Speed: ${telemetry.speed.toStringAsFixed(2)} mph',
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      'Speed: ${telemetryData.speed.toStringAsFixed(2)} mph',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 16),
                     ),
                     Text(
-                      'RPM: ${telemetry.rpm.toStringAsFixed(0)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      'RPM: ${telemetryData.rpm.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 16),
                     ),
+                    // Add more telemetry data here if needed
                   ],
                 ),
               ),
             ),
+          // Time Offset Slider
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Column(
+              children: [
+                const Text(
+                  'Time Offset Adjustment (seconds)',
+                  style: TextStyle(color: Colors.white),
+                ),
+                Slider(
+                  value: _timeOffset,
+                  min: -5.0,
+                  max: 5.0,
+                  divisions: 100,
+                  label: _timeOffset.toStringAsFixed(2),
+                  onChanged: (double value) {
+                    _updateTimeOffset(value);
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           setState(() {
-            _controller.value.isPlaying ? _controller.pause() : _controller.play();
+            _controller.value.isPlaying
+                ? _controller.pause()
+                : _controller.play();
           });
-          _logger.d('Video play/pause toggled: ${_controller.value.isPlaying}');
+          _logger.d(
+              'Video play/pause toggled: ${_controller.value.isPlaying}');
         },
         child: Icon(
           _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,

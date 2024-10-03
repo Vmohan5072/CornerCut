@@ -25,6 +25,12 @@ class MyApp extends StatelessWidget {
       title: 'Lap Timer App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        textTheme: const TextTheme(
+          headlineSmall: TextStyle(
+              fontSize: 20.0, fontWeight: FontWeight.bold),
+          bodyMedium: TextStyle(fontSize: 16.0),
+        ),
       ),
       initialRoute: '/',
       routes: {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:logger/logger.dart';
 
 class LapTimer extends StatefulWidget {
   const LapTimer({super.key});
@@ -12,6 +13,7 @@ class LapTimerState extends State<LapTimer> {
   final Stopwatch _stopwatch = Stopwatch();
   Timer? _timer;
   final List<Duration> _laps = [];
+  final Logger logger = Logger();
 
   void _startStopwatch() {
     setState(() {
@@ -19,6 +21,7 @@ class LapTimerState extends State<LapTimer> {
       _timer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
         setState(() {});
       });
+      logger.i('Stopwatch started');
     });
   }
 
@@ -26,6 +29,7 @@ class LapTimerState extends State<LapTimer> {
     setState(() {
       _stopwatch.stop();
       _timer?.cancel();
+      logger.i('Stopwatch stopped');
     });
   }
 
@@ -33,12 +37,14 @@ class LapTimerState extends State<LapTimer> {
     setState(() {
       _stopwatch.reset();
       _laps.clear();
+      logger.i('Stopwatch reset');
     });
   }
 
   void _recordLap() {
     setState(() {
       _laps.add(_stopwatch.elapsed);
+      logger.i('Lap recorded: ${_stopwatch.elapsed}');
     });
   }
 
@@ -55,7 +61,6 @@ class LapTimerState extends State<LapTimer> {
     final elapsedTime = _formatDuration(_stopwatch.elapsed);
 
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           elapsedTime,

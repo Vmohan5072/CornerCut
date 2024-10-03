@@ -15,6 +15,7 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
   List<BluetoothDevice> _devices = [];
   final BluetoothService _bluetoothService = BluetoothService();
   final Logger logger = Logger();
+  bool _isConnecting = false;
 
   @override
   void initState() {
@@ -39,7 +40,8 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
   // Get bonded Bluetooth devices
   void _getBondedDevices() async {
     try {
-      List<BluetoothDevice> devices = await FlutterBluetoothSerial.instance.getBondedDevices();
+      List<BluetoothDevice> devices =
+          await FlutterBluetoothSerial.instance.getBondedDevices();
       setState(() {
         _devices = devices;
         logger.d('Bonded devices: $_devices');
@@ -55,8 +57,14 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
 
   // Connect to selected Bluetooth device
   void _connectToDevice(BluetoothDevice device) async {
+    setState(() {
+      _isConnecting = true;
+    });
     logger.i('Connecting to device: ${device.name ?? 'Unknown Device'}');
-    await _bluetoothService.connectToDevice(device.address, context); // Passed context
+    await _bluetoothService.connectToDevice(device.address, context);
+    setState(() {
+      _isConnecting = false;
+    });
     // Show a SnackBar to inform the user
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Connected to ${device.name ?? 'Device'}')),
@@ -75,19 +83,23 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
       appBar: AppBar(
         title: const Text('Connect to OBD-II Device'),
       ),
-      body: _devices.isNotEmpty
-          ? ListView(
-              children: _devices
-                  .map((device) => ListTile(
-                        title: Text(device.name ?? 'Unknown Device'),
-                        subtitle: Text(device.address),
-                        onTap: () => _connectToDevice(device),
-                      ))
-                  .toList(),
-            )
-          : const Center(
-              child: CircularProgressIndicator(),
-            ),
+      body: _isConnecting
+          ? const Center(child: CircularProgressIndicator())
+          : _devices.isNotEmpty
+              ? ListView.builder(
+                  itemCount: _devices.length,
+                  itemBuilder: (context, index) {
+                    BluetoothDevice device = _devices[index];
+                    return ListTile(
+                      title: Text(device.name ?? 'Unknown Device'),
+                      subtitle: Text(device.address),
+                      onTap: () => _connectToDevice(device),
+                    );
+                  },
+                )
+              : const Center(
+                  child: Text('No bonded Bluetooth devices found.'),
+                ),
     );
   }
 }

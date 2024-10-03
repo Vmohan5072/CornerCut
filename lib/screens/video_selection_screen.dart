@@ -15,7 +15,10 @@ class VideoSelectionScreenState extends State<VideoSelectionScreen> {
   final Logger logger = Logger();
 
   Future<void> _pickVideo() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.video);
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.video,
+      allowedExtensions: ['mp4', 'MP4', 'mov', 'MOV'],
+    );
 
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -46,12 +49,12 @@ class VideoSelectionScreenState extends State<VideoSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Select Video'),
+          title: const Text('Select GoPro Video'),
         ),
         body: Center(
           child: ElevatedButton(
             onPressed: _pickVideo,
-            child: const Text('Pick Video'),
+            child: const Text('Pick GoPro Video'),
           ),
         ));
   }

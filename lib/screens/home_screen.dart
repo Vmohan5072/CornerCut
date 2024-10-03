@@ -38,6 +38,7 @@ class HomeScreenState extends State<HomeScreen> {
     } else {
       // Log permission denial
       logger.w('Location permission denied');
+      // Show a SnackBar to inform the user
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Location permission denied')),
       );
@@ -67,7 +68,7 @@ class HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.pushNamed(context, '/video-selection');
             },
-            tooltip: 'Select Video',
+            tooltip: 'Select GoPro Video',
           ),
         ],
       ),
@@ -106,11 +107,11 @@ class HomeScreenState extends State<HomeScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               Text(
-                'Speed: ${telemetry.speed.toStringAsFixed(2)} mph',
+                'Speed: ${telemetry.dataPoints.isNotEmpty ? telemetry.dataPoints.last.speed.toStringAsFixed(2) : '0.00'} mph',
                 style: const TextStyle(fontSize: 18),
               ),
               Text(
-                'RPM: ${telemetry.rpm.toStringAsFixed(0)}',
+                'RPM: ${telemetry.dataPoints.isNotEmpty ? telemetry.dataPoints.last.rpm.toStringAsFixed(0) : '0'}',
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 30),
