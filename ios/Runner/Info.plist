@@ -52,6 +52,9 @@
 <key>NSBluetoothAlwaysUsageDescription</key>
 <string>This app uses Bluetooth to connect to your vehicle's OBD-II adapter.</string>
 
+<key>NSBluetoothPeripheralUsageDescription</key>
+<string>This app uses Bluetooth to connect to GPS and OBD-II devices.</string>
+
 <key>NSCameraUsageDescription</key>
 <string>This app requires access to your camera for video recording.</string>
 

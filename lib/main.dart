@@ -31,7 +31,9 @@ class MyApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
         textTheme: const TextTheme(
           headlineSmall: TextStyle(
-              fontSize: 20.0, fontWeight: FontWeight.bold),
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+          ),
           bodyMedium: TextStyle(fontSize: 16.0),
         ),
       ),

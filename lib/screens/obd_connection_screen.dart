@@ -1,21 +1,24 @@
+import 'dart:async'; // For StreamSubscription
 import 'package:flutter/material.dart';
-import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
-import 'package:logger/logger.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:logger/logger.dart' as app_logger; // Alias to avoid naming conflicts
 import '../services/bluetooth_service.dart';
 import '../services/permission_service.dart';
 
 class ObdConnectionScreen extends StatefulWidget {
-  const ObdConnectionScreen({super.key});
+  const ObdConnectionScreen({Key? key}) : super(key: key);
 
   @override
   ObdConnectionScreenState createState() => ObdConnectionScreenState();
 }
 
 class ObdConnectionScreenState extends State<ObdConnectionScreen> {
-  List<BluetoothDevice> _devices = [];
   final BluetoothService _bluetoothService = BluetoothService();
-  final Logger logger = Logger();
-  bool _isConnecting = false;
+  final app_logger.Logger logger = app_logger.Logger();
+  bool _isScanning = false;
+  List<DiscoveredDevice> _devices = [];
+  final FlutterReactiveBle _ble = FlutterReactiveBle();
+  StreamSubscription<DiscoveredDevice>? _scanSubscription;
 
   @override
   void initState() {
@@ -23,56 +26,81 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
     initBluetooth();
   }
 
-  // Initialize Bluetooth and request permission
+  // Initialize Bluetooth and request permissions
   void initBluetooth() async {
-    bool hasPermission = await PermissionService.requestBluetoothPermission();
+    bool hasPermission = await PermissionService.requestPermissions();
     if (hasPermission) {
-      _getBondedDevices();
+      _startScan();
     } else {
-      logger.w('Bluetooth permission denied');
-      // Show a SnackBar to inform the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bluetooth permission denied')),
-      );
+      logger.w('Bluetooth or Location permission denied');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bluetooth or Location permission denied')),
+        );
+      }
     }
   }
 
-  // Get bonded Bluetooth devices
-  void _getBondedDevices() async {
-    try {
-      List<BluetoothDevice> devices =
-          await FlutterBluetoothSerial.instance.getBondedDevices();
-      setState(() {
-        _devices = devices;
-        logger.d('Bonded devices: $_devices');
-      });
-    } catch (e) {
-      logger.e('Error getting bonded devices: $e');
-      // Show a SnackBar to inform the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error getting devices: $e')),
-      );
-    }
+  // Start scanning for BLE devices
+  void _startScan() {
+    setState(() {
+      _isScanning = true;
+      _devices.clear();
+    });
+
+    _scanSubscription = _ble.scanForDevices(
+      withServices: [], // Specify service UUIDs if known for faster scanning
+      scanMode: ScanMode.lowLatency,
+    ).listen((device) {
+      // Avoid duplicates
+      if (!_devices.any((d) => d.id == device.id)) {
+        setState(() {
+          _devices.add(device);
+          logger.d('Device found: ${device.name}');
+        });
+      }
+    }, onError: (error) {
+      logger.e('Scan error: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scan error: $error')),
+        );
+      }
+    });
+
+    // Stop scanning after a duration
+    Future.delayed(const Duration(seconds: 10), () {
+      _stopScan();
+    });
   }
 
-  // Connect to selected Bluetooth device
-  void _connectToDevice(BluetoothDevice device) async {
+  // Stop scanning
+  void _stopScan() {
+    _scanSubscription?.cancel();
     setState(() {
-      _isConnecting = true;
+      _isScanning = false;
     });
-    logger.i('Connecting to device: ${device.name ?? 'Unknown Device'}');
-    await _bluetoothService.connectToDevice(device.address, context);
-    setState(() {
-      _isConnecting = false;
-    });
+    logger.i('Scanning stopped');
+  }
+
+  // Connect to selected BLE device
+  void _connectToDevice(DiscoveredDevice device) async {
+    _stopScan(); // Ensure scanning is stopped
+    logger.i('Connecting to device: ${device.name}');
+    await _bluetoothService.connectToDevice(device.id, context);
     // Show a SnackBar to inform the user
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Connected to ${device.name ?? 'Device'}')),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Connected to ${device.name.isNotEmpty ? device.name : 'Device'}')),
+      );
+      // Navigate to Telemetry Display Screen
+      Navigator.pushNamed(context, '/telemetry');
+    }
   }
 
   @override
   void dispose() {
+    _scanSubscription?.cancel();
     _bluetoothService.disconnect();
     super.dispose();
   }
@@ -82,23 +110,30 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Connect to OBD-II Device'),
+        actions: [
+          IconButton(
+            icon: Icon(_isScanning ? Icons.stop : Icons.search),
+            onPressed: _isScanning ? _stopScan : _startScan,
+            tooltip: _isScanning ? 'Stop Scan' : 'Scan for Devices',
+          ),
+        ],
       ),
-      body: _isConnecting
+      body: _isScanning
           ? const Center(child: CircularProgressIndicator())
           : _devices.isNotEmpty
               ? ListView.builder(
                   itemCount: _devices.length,
                   itemBuilder: (context, index) {
-                    BluetoothDevice device = _devices[index];
+                    DiscoveredDevice device = _devices[index];
                     return ListTile(
-                      title: Text(device.name ?? 'Unknown Device'),
-                      subtitle: Text(device.address),
+                      title: Text(device.name.isNotEmpty ? device.name : 'Unknown Device'),
+                      subtitle: Text(device.id),
                       onTap: () => _connectToDevice(device),
                     );
                   },
                 )
               : const Center(
-                  child: Text('No bonded Bluetooth devices found.'),
+                  child: Text('No Bluetooth devices found.'),
                 ),
     );
   }

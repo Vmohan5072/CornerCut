@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
-import 'package:logger/logger.dart';
+import 'package:logger/logger.dart' as app_logger;
 
 import '../services/gps_service.dart';
 import '../services/permission_service.dart';
@@ -9,7 +9,7 @@ import '../widgets/lap_timer.dart';
 import '../models/telemetry_model.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -17,7 +17,7 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   Position? _currentPosition;
-  final Logger logger = Logger();
+  final app_logger.Logger logger = app_logger.Logger();
 
   @override
   void initState() {
@@ -25,9 +25,9 @@ class HomeScreenState extends State<HomeScreen> {
     initGps();
   }
 
-  // Initialize GPS and request permission
+  // Initialize GPS and request permissions
   void initGps() async {
-    bool hasPermission = await PermissionService.requestLocationPermission();
+    bool hasPermission = await PermissionService.requestPermissions(); // Updated method name
     if (hasPermission) {
       GpsService.getPositionStream().listen((Position position) {
         setState(() {
@@ -39,9 +39,11 @@ class HomeScreenState extends State<HomeScreen> {
       // Log permission denial
       logger.w('Location permission denied');
       // Show a SnackBar to inform the user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permission denied')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission denied')),
+        );
+      }
     }
   }
 
