@@ -27,7 +27,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   final Logger _logger = Logger();
   bool _isOverlayVisible = true;
   DateTime? _videoStartTime;
-  double _timeOffset = 0.0; // Time offset in seconds
+  double _timeOffset = 0.0; // Allows user to manually adjust footage and telemetry timing if desynced
 
   TelemetryData? _currentTelemetryData;
 
@@ -180,7 +180,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           // Telemetry Overlay
           if (_isOverlayVisible && telemetryData != null)
             Positioned(
-              bottom: 80, // Adjusted to make space for slider
+              bottom: 80,
               left: 20,
               right: 20,
               child: Column(
@@ -269,10 +269,10 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
           _logger.d(
               'Video play/pause toggled: ${_controller.value.isPlaying}');
         },
+        tooltip: _controller.value.isPlaying ? 'Pause' : 'Play',
         child: Icon(
           _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
         ),
-        tooltip: _controller.value.isPlaying ? 'Pause' : 'Play',
       ),
     );
   }

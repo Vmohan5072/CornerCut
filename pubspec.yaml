@@ -38,6 +38,8 @@ dependencies:
   geolocator:
   flutter_blue_plus:
   flutter_reactive_ble:
+  flutter_blue_classic:
+  nmea:
   video_player:
   ffmpeg_kit_flutter_full_gpl:
   path_provider:

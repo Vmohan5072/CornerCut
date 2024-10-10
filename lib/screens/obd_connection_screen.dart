@@ -1,12 +1,11 @@
-import 'dart:async'; // For StreamSubscription
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
-import 'package:logger/logger.dart' as app_logger; // Alias to avoid naming conflicts
+import 'package:flutter_blue_classic/flutter_blue_classic.dart';
+import 'package:logger/logger.dart' as app_logger;
 import '../services/bluetooth_service.dart';
-import '../services/permission_service.dart';
 
 class ObdConnectionScreen extends StatefulWidget {
-  const ObdConnectionScreen({Key? key}) : super(key: key);
+  const ObdConnectionScreen({super.key});
 
   @override
   ObdConnectionScreenState createState() => ObdConnectionScreenState();
@@ -15,10 +14,10 @@ class ObdConnectionScreen extends StatefulWidget {
 class ObdConnectionScreenState extends State<ObdConnectionScreen> {
   final BluetoothService _bluetoothService = BluetoothService();
   final app_logger.Logger logger = app_logger.Logger();
+  final FlutterBlueClassic _flutterBlue = FlutterBlueClassic();
   bool _isScanning = false;
-  List<DiscoveredDevice> _devices = [];
-  final FlutterReactiveBle _ble = FlutterReactiveBle();
-  StreamSubscription<DiscoveredDevice>? _scanSubscription;
+  List<BluetoothDevice> _devices = [];
+  StreamSubscription<BluetoothDevice>? _scanSubscription; // Changed type
 
   @override
   void initState() {
@@ -26,49 +25,30 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
     initBluetooth();
   }
 
-  // Initialize Bluetooth and request permissions
-  void initBluetooth() async {
-    bool hasPermission = await PermissionService.requestPermissions();
-    if (hasPermission) {
-      _startScan();
-    } else {
-      logger.w('Bluetooth or Location permission denied');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bluetooth or Location permission denied')),
-        );
-      }
-    }
+  // Initialize Bluetooth and start scanning
+  void initBluetooth() {
+    _startScan();
   }
 
-  // Start scanning for BLE devices
+  // Start scanning for devices
   void _startScan() {
     setState(() {
       _isScanning = true;
       _devices.clear();
     });
 
-    _scanSubscription = _ble.scanForDevices(
-      withServices: [], // Specify service UUIDs if known for faster scanning
-      scanMode: ScanMode.lowLatency,
-    ).listen((device) {
-      // Avoid duplicates
-      if (!_devices.any((d) => d.id == device.id)) {
-        setState(() {
+    _flutterBlue.startScan();
+
+    // Listen to bluetooth devices
+    _scanSubscription = _flutterBlue.scanResults.listen((device) {
+      setState(() {
+        if (!_devices.any((d) => d.address == device.address)) { // Avoid duplicates
           _devices.add(device);
-          logger.d('Device found: ${device.name}');
-        });
-      }
-    }, onError: (error) {
-      logger.e('Scan error: $error');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Scan error: $error')),
-        );
-      }
+        }
+      });
     });
 
-    // Stop scanning after a duration
+    // Scan times out after 10 seconds
     Future.delayed(const Duration(seconds: 10), () {
       _stopScan();
     });
@@ -76,6 +56,7 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
 
   // Stop scanning
   void _stopScan() {
+    _flutterBlue.stopScan();
     _scanSubscription?.cancel();
     setState(() {
       _isScanning = false;
@@ -83,25 +64,25 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
     logger.i('Scanning stopped');
   }
 
-  // Connect to selected BLE device
-  void _connectToDevice(DiscoveredDevice device) async {
+  // Connect to selected device
+  void _connectToDevice(BluetoothDevice device) async {
     _stopScan(); // Ensure scanning is stopped
-    logger.i('Connecting to device: ${device.name}');
-    await _bluetoothService.connectToDevice(device.id, context);
+    logger.i('Connecting to device: ${device.address}');
+    await _bluetoothService.connectToDevice(device.address, context); // Pass device.address
     // Show a SnackBar to inform the user
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Connected to ${device.name.isNotEmpty ? device.name : 'Device'}')),
+        SnackBar(content: Text((device.name?.isNotEmpty ?? false) ? device.name! : 'Unknown Device')),
       );
-      // Navigate to Telemetry Display Screen
-      Navigator.pushNamed(context, '/telemetry');
+      // Navigate back to the previous screen or to telemetry display screen
+      Navigator.pop(context);
     }
   }
 
   @override
   void dispose() {
     _scanSubscription?.cancel();
-    _bluetoothService.disconnect();
+    _bluetoothService.dispose();
     super.dispose();
   }
 
@@ -124,10 +105,11 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
               ? ListView.builder(
                   itemCount: _devices.length,
                   itemBuilder: (context, index) {
-                    DiscoveredDevice device = _devices[index];
+                    BluetoothDevice device = _devices[index];
+                    String deviceName = (device.name?.isNotEmpty ?? false) ? device.name! : 'Unknown Device';
                     return ListTile(
-                      title: Text(device.name.isNotEmpty ? device.name : 'Unknown Device'),
-                      subtitle: Text(device.id),
+                      title: Text(deviceName),
+                      subtitle: Text(device.address),
                       onTap: () => _connectToDevice(device),
                     );
                   },

@@ -5,6 +5,8 @@ import 'models/lap_model.dart';
 import 'screens/home_screen.dart';
 import 'screens/obd_connection_screen.dart';
 import 'screens/video_selection_screen.dart';
+import 'services/gps_service.dart'; // Import GpsService
+import 'services/bluetooth_service.dart'; // Import BluetoothService
 
 void main() {
   runApp(
@@ -12,7 +14,8 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => TelemetryModel()),
         ChangeNotifierProvider(create: (_) => LapModel()),
-        // Add other providers here if needed
+        Provider(create: (_) => GpsService()),
+        Provider(create: (_) => BluetoothService()),
       ],
       child: const MyApp(),
     ),

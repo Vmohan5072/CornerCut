@@ -5,6 +5,9 @@ class TelemetryData {
   final double rpm;
   final double throttle; // in percentage
   final double brake; // in percentage
+  final double latitude;
+  final double longitude;
+  final double altitude;
   final DateTime timestamp;
 
   TelemetryData({
@@ -12,6 +15,9 @@ class TelemetryData {
     required this.rpm,
     required this.throttle,
     required this.brake,
+    required this.latitude,
+    required this.longitude,
+    required this.altitude,
     required this.timestamp,
   });
 }
@@ -21,17 +27,40 @@ class TelemetryModel with ChangeNotifier {
 
   List<TelemetryData> get dataPoints => _dataPoints;
 
+  double _currentSpeed = 0.0;
+  double _currentRpm = 0.0;
+  double _currentThrottle = 0.0;
+  double _currentBrake = 0.0;
+  double _currentLatitude = 0.0;
+  double _currentLongitude = 0.0;
+  double _currentAltitude = 0.0;
+
+  // Update telemetry data
   void updateTelemetry({
-    required double speed,
-    required double rpm,
-    required double throttle,
-    required double brake,
+    double? speed,
+    double? rpm,
+    double? throttle,
+    double? brake,
+    double? latitude,
+    double? longitude,
+    double? altitude,
   }) {
+    _currentSpeed = speed ?? _currentSpeed;
+    _currentRpm = rpm ?? _currentRpm;
+    _currentThrottle = throttle ?? _currentThrottle;
+    _currentBrake = brake ?? _currentBrake;
+    _currentLatitude = latitude ?? _currentLatitude;
+    _currentLongitude = longitude ?? _currentLongitude;
+    _currentAltitude = altitude ?? _currentAltitude;
+
     final dataPoint = TelemetryData(
-      speed: speed,
-      rpm: rpm,
-      throttle: throttle,
-      brake: brake,
+      speed: _currentSpeed,
+      rpm: _currentRpm,
+      throttle: _currentThrottle,
+      brake: _currentBrake,
+      latitude: _currentLatitude,
+      longitude: _currentLongitude,
+      altitude: _currentAltitude,
       timestamp: DateTime.now().toUtc(),
     );
     _dataPoints.add(dataPoint);
