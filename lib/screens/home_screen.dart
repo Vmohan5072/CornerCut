@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart' as app_logger;
-import 'dart:async'; // Import for StreamSubscription
-
+import 'dart:async';
 import '../services/gps_service.dart';
 import '../services/permission_service.dart';
 import '../widgets/lap_timer.dart';

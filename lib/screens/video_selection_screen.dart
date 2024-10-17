@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'video_player_screen.dart';
@@ -16,8 +17,8 @@ class VideoSelectionScreenState extends State<VideoSelectionScreen> {
 
   Future<void> _pickVideo() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.video,
-      allowedExtensions: ['mp4', 'MP4', 'mov', 'MOV'],
+      type: FileType.custom,
+      allowedExtensions: ['mp4', 'mov'],
     );
 
     if (result != null && result.files.single.path != null) {
@@ -48,14 +49,15 @@ class VideoSelectionScreenState extends State<VideoSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Select GoPro Video'),
+      appBar: AppBar(
+        title: const Text('Select GoPro Video'),
+      ),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: _pickVideo,
+          child: const Text('Pick GoPro Video'),
         ),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: _pickVideo,
-            child: const Text('Pick GoPro Video'),
-          ),
-        ));
+      ),
+    );
   }
 }
