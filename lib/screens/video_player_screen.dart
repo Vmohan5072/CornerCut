@@ -8,7 +8,7 @@ import '../widgets/overlay_widgets.dart';
 import 'dart:io';
 import 'package:ffmpeg_kit_flutter_full_gpl/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_full_gpl/return_code.dart';
-import 'package:intl/intl.dart';
+import 'overlay_settings.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
   final String videoPath;
@@ -30,6 +30,12 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   double _timeOffset = 0.0; // Allows user to manually adjust footage and telemetry timing if desynced
 
   TelemetryData? _currentTelemetryData;
+  Map<String, bool> _overlaySettings = {
+    'Speed': true,
+    'RPM': true,
+    'Throttle': true,
+    'Brake': true,
+  };
 
   @override
   void initState() {
@@ -131,6 +137,23 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
     _logger.d('Time offset updated to: $_timeOffset seconds');
   }
 
+  // Show overlay settings
+  void _showOverlaySettings() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return OverlaySettings(
+          initialSettings: _overlaySettings,
+          onSettingsChanged: (newSettings) {
+            setState(() {
+              _overlaySettings = newSettings;
+            });
+          },
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _controller.removeListener(_updateTelemetryData);
@@ -165,6 +188,11 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             onPressed: _toggleOverlay,
             tooltip: _isOverlayVisible ? 'Hide Telemetry' : 'Show Telemetry',
           ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _showOverlaySettings,
+            tooltip: 'Overlay Settings',
+          ),
         ],
       ),
       body: Stack(
@@ -189,20 +217,28 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: SpeedometerGauge(speed: telemetryData.speed),
-                      ),
-                      SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: TachometerGauge(rpm: telemetryData.rpm),
-                      ),
-                      ThrottleBrakeIndicator(
-                        throttle: telemetryData.throttle,
-                        brake: telemetryData.brake,
-                      ),
+                      if (_overlaySettings['Speed']!)
+                        SizedBox(
+                          width: 100,
+                          height: 100,
+                          child: SpeedometerGauge(speed: telemetryData.speed),
+                        ),
+                      if (_overlaySettings['RPM']!)
+                        SizedBox(
+                          width: 100,
+                          height: 100,
+                          child: TachometerGauge(rpm: telemetryData.rpm),
+                        ),
+                      if (_overlaySettings['Throttle']! ||
+                          _overlaySettings['Brake']!)
+                        ThrottleBrakeIndicator(
+                          throttle: _overlaySettings['Throttle']!
+                              ? telemetryData.throttle
+                              : 0,
+                          brake: _overlaySettings['Brake']!
+                              ? telemetryData.brake
+                              : 0,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 10),

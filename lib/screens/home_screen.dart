@@ -1,5 +1,3 @@
-// home_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart' as app_logger;
@@ -9,6 +7,9 @@ import '../services/gps_service.dart';
 import '../services/permission_service.dart';
 import '../widgets/lap_timer.dart';
 import '../models/telemetry_model.dart';
+import '../widgets/telemetry_dashboard.dart';
+import '../screens/settings_screen.dart';
+import '../widgets/lap_map.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +24,14 @@ class HomeScreenState extends State<HomeScreen> {
   late GpsService _gpsService;
   late TelemetryModel _telemetryModel;
   StreamSubscription<GpsData>? _gpsSubscription;
+
+  int _currentIndex = 0;
+  final List<Widget> _pages = [
+    const DashboardScreen(),
+    const LapTimerScreen(),
+    const TelemetryScreen(),
+    const SettingsScreen(),
+  ];
 
   @override
   void initState() {
@@ -71,12 +80,49 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Access telemetry data from Provider
-    final telemetry = Provider.of<TelemetryModel>(context);
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        selectedItemColor: Theme.of(context).colorScheme.secondary,
+        unselectedItemColor: Colors.white70,
+        backgroundColor: Colors.black,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.timer),
+            label: 'Lap Timer',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.speed),
+            label: 'Telemetry',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
+        ],
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+    );
+  }
+}
 
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lap Timer App'),
+        title: const Text('CornerCut Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.bluetooth),
@@ -94,94 +140,94 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // Display GPS Data using Consumer
-              const Text(
-                'GPS Data',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            // GPS Data Card
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.gps_fixed, color: Colors.redAccent),
+                title: const Text('GPS Data'),
+                subtitle: Consumer<TelemetryModel>(
+                  builder: (context, telemetry, child) {
+                    if (telemetry.latestData != null) {
+                      final latestData = telemetry.latestData!;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Latitude: ${latestData.latitude.toStringAsFixed(6)}'),
+                          Text('Longitude: ${latestData.longitude.toStringAsFixed(6)}'),
+                          Text('Altitude: ${latestData.altitude.toStringAsFixed(2)} m'),
+                        ],
+                      );
+                    } else {
+                      return const Text('Waiting for GPS data...');
+                    }
+                  },
+                ),
               ),
-              const SizedBox(height: 10),
-              Consumer<TelemetryModel>(
-                builder: (context, telemetry, child) {
-                  if (telemetry.dataPoints.isNotEmpty) {
-                    final latestData = telemetry.dataPoints.last;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Latitude: ${latestData.latitude.toStringAsFixed(6)}',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          'Longitude: ${latestData.longitude.toStringAsFixed(6)}',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          'Altitude: ${latestData.altitude.toStringAsFixed(2)} meters',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return const Text(
-                      'Waiting for GPS data...',
-                      style: TextStyle(fontSize: 18),
-                    );
-                  }
-                },
+            ),
+            // Telemetry Data Card
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.speed, color: Colors.redAccent),
+                title: const Text('Telemetry Data'),
+                subtitle: Consumer<TelemetryModel>(
+                  builder: (context, telemetry, child) {
+                    if (telemetry.latestData != null) {
+                      final latestData = telemetry.latestData!;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Speed: ${latestData.speed.toStringAsFixed(2)} mph'),
+                          Text('RPM: ${latestData.rpm.toStringAsFixed(0)}'),
+                          Text('Throttle: ${latestData.throttle.toStringAsFixed(1)}%'),
+                          Text('Brake: ${latestData.brake.toStringAsFixed(1)}%'),
+                        ],
+                      );
+                    } else {
+                      return const Text('Waiting for telemetry data...');
+                    }
+                  },
+                ),
               ),
-              const SizedBox(height: 20),
-              // Display Telemetry Data using Consumer
-              const Text(
-                'Telemetry Data',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Consumer<TelemetryModel>(
-                builder: (context, telemetry, child) {
-                  if (telemetry.dataPoints.isNotEmpty) {
-                    final latestData = telemetry.dataPoints.last;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Speed: ${latestData.speed.toStringAsFixed(2)} mph',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          'RPM: ${latestData.rpm.toStringAsFixed(0)}',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          'Throttle: ${latestData.throttle.toStringAsFixed(1)}%',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        Text(
-                          'Brake: ${latestData.brake.toStringAsFixed(1)}%',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return const Text(
-                      'Waiting for telemetry data...',
-                      style: TextStyle(fontSize: 18),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 30),
-              // Include the Lap Timer widget
-              const LapTimer(),
-            ],
-          ),
+            ),
+            // Lap Timer
+            const LapTimer(),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class LapTimerScreen extends StatelessWidget {
+  const LapTimerScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Lap Timer'),
+      ),
+      body: const Center(
+        child: LapTimer(),
+      ),
+    );
+  }
+}
+
+class TelemetryScreen extends StatelessWidget {
+  const TelemetryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Telemetry Dashboard'),
+      ),
+      body: const TelemetryDashboard(),
     );
   }
 }

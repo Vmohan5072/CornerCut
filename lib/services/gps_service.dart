@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data'; // Import for Uint8List
+import 'dart:typed_data';
 import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'package:nmea/nmea.dart';
 import 'package:logger/logger.dart' as app_logger;
@@ -41,7 +41,6 @@ class GpsService {
     ..registerTalkerSentence('GGA', (line) => GgaSentence(raw: line))
     ..registerTalkerSentence('RMC', (line) => RmcSentence(raw: line));
 
-  /// Initializes the GPS service by enabling Bluetooth and connecting to GPS module.
   Future<void> initialize() async {
     try {
       // Check if Bluetooth is supported.
@@ -54,7 +53,7 @@ class GpsService {
       // Check if Bluetooth is enabled.
       bool isEnabled = await _flutterBlue.isEnabled;
       if (!isEnabled) {
-        _flutterBlue.turnOn(); // Removed assignment
+        _flutterBlue.turnOn();
         _logger.i('Bluetooth turned on.');
       }
 
@@ -62,8 +61,8 @@ class GpsService {
       // Start discovering Bluetooth devices.
       _flutterBlue.startScan();
 
-      _flutterBlue.scanResults.listen((device) async { // Changed parameter to single device
-        if (device.name!.isNotEmpty && (device.name == 'Garmin GLO' || device.name!.contains('GPS'))) {
+      _flutterBlue.scanResults.listen((device) async {
+        if (device.name!.isNotEmpty && (device.name == 'Garmin GLO' || device.name!.contains('GPS'))) { //Looking for Garmin GLO as test device as well
           _logger.i('GPS module found. Attempting to connect to ${device.address}.');
           _flutterBlue.stopScan();
 
@@ -141,14 +140,13 @@ class GpsService {
           GpsData gpsData = GpsData(
             latitude: latitude,
             longitude: longitude,
-            altitude: 0.0, // RMC does not provide altitude.
+            altitude: 0.0,
             timestamp: timestamp,
           );
           _gpsDataController.add(gpsData);
           _logger.d('GPS Data updated: $gpsData');
         }
       }
-      // Additional sentence types can be handled here if needed.
     } catch (e) {
       _logger.e('Error parsing NMEA sentence: $e');
     }
@@ -157,12 +155,12 @@ class GpsService {
   /// Parses date and time from RMC sentence fields.
   DateTime? _parseDateTime(String date, String time) {
     try {
-      // Date format: DDMMYY
+      // Date format: DD/MM/YY
       int day = int.parse(date.substring(0, 2));
       int month = int.parse(date.substring(2, 4));
       int year = int.parse(date.substring(4, 6)) + 2000;
 
-      // Time format: HHMMSS
+      // Time format: HH:MM:SS
       int hour = int.parse(time.substring(0, 2));
       int minute = int.parse(time.substring(2, 4));
       int second = int.parse(time.substring(4, 6));
@@ -177,11 +175,10 @@ class GpsService {
   /// Disposes resources when no longer needed.
   void dispose() {
     _gpsDataController.close();
-    _connection?.finish(); // Use finish() to close the connection
+    _connection?.finish(); // Close the connection
   }
 }
 
-/// Custom GGA Sentence for parsing GGA NMEA sentences.
 class GgaSentence extends TalkerSentence {
   GgaSentence({required super.raw});
 
@@ -217,7 +214,7 @@ class RmcSentence extends TalkerSentence {
   RmcSentence({required super.raw});
 
   String get time => fields[1];
-  String get status => fields[2]; // 'A' = active, 'V' = void
+  String get status => fields[2]; // A=active, V=void
   double? get latitude => _parseLatitude(fields[3], fields[4]);
   double? get longitude => _parseLongitude(fields[5], fields[6]);
   String get date => fields[9];

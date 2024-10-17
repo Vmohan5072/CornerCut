@@ -40,6 +40,8 @@ dependencies:
   flutter_reactive_ble:
   flutter_blue_classic:
   nmea:
+  google_maps_flutter:
+  hive:
   video_player:
   ffmpeg_kit_flutter_full_gpl:
   path_provider:

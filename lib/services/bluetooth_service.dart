@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data'; // Import for Uint8List
+import 'dart:typed_data';
 import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'package:logger/logger.dart' as app_logger;
 import 'package:provider/provider.dart';
@@ -11,8 +11,8 @@ class BluetoothService {
   final FlutterBlueClassic _flutterBlue = FlutterBlueClassic();
   final app_logger.Logger _logger = app_logger.Logger();
 
-  StreamSubscription<BluetoothAdapterState>? _stateSubscription; // Adjusted type
-  StreamSubscription<BluetoothDevice>? _scanSubscription; // Adjusted type
+  StreamSubscription<BluetoothAdapterState>? _stateSubscription;
+  StreamSubscription<BluetoothDevice>? _scanSubscription;
   BluetoothConnection? _connection;
   StreamSubscription<Uint8List>? _readSubscription;
   Timer? _obdTimer;
@@ -40,7 +40,7 @@ class BluetoothService {
   Future<void> connectToDevice(String deviceAddress, BuildContext context) async {
     try {
       _logger.i('Connecting to device: $deviceAddress');
-      _connection = await _flutterBlue.connect(deviceAddress);
+      _connection = await _flutterBlue.connect(deviceAddress); // Pass deviceAddress
       _logger.i('Connected to device with address: $deviceAddress');
 
       // Listen to incoming data
@@ -77,13 +77,11 @@ class BluetoothService {
     sendData('ATE0\r');
     Future.delayed(Duration(milliseconds: 500));
 
-    // Now ready to send OBD-II commands
-    // Example: Request vehicle data every second
     _obdTimer = Timer.periodic(Duration(seconds: 1), (timer) {
       sendData('010D\r'); // PID for vehicle speed
       sendData('010C\r'); // PID for RPM
       sendData('0111\r'); // PID for Throttle Position
-      sendData('015A\r'); // PID for Brake Input Status (may not be supported)
+      sendData('015A\r'); // PID for Brake Input Status
     });
   }
 
@@ -99,7 +97,7 @@ class BluetoothService {
 
   // Process OBD responses
   void _processObdResponse(String response, BuildContext context) {
-    // Clean up the response
+    // Clean response
     response = response.replaceAll('\r', '').replaceAll('\n', '').trim();
 
     // Split multiple responses
@@ -118,7 +116,6 @@ class BluetoothService {
       if (data.startsWith('41')) {
         // Remove spaces
         String cleanData = data.replaceAll(' ', '');
-        // Extract the PID
         String pid = cleanData.substring(2, 4);
         if (pid == '0D') {
           // Vehicle speed
@@ -149,7 +146,7 @@ class BluetoothService {
           );
           _logger.i('Throttle updated: $throttle%');
         } else if (pid == '5A') {
-          // Brake Input Status (may vary by vehicle)
+          // Brake Input Status
           String brakeHex = cleanData.substring(4, 6);
           int brakeStatus = int.parse(brakeHex, radix: 16);
           double brake = brakeStatus == 0 ? 0.0 : 100.0;
@@ -170,7 +167,7 @@ class BluetoothService {
   // Disconnect from the OBD device
   void disconnect() {
     _readSubscription?.cancel();
-    _connection?.finish(); // Use finish() to close the connection
+    _connection?.finish(); //gracefully close the connection
     _connection = null;
     _obdTimer?.cancel();
     _logger.i('Disconnected from OBD device');

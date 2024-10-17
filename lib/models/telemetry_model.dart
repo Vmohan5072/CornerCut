@@ -20,6 +20,19 @@ class TelemetryData {
     required this.altitude,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'speed': speed,
+      'rpm': rpm,
+      'throttle': throttle,
+      'brake': brake,
+      'latitude': latitude,
+      'longitude': longitude,
+      'altitude': altitude,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
 }
 
 class TelemetryModel with ChangeNotifier {
@@ -27,13 +40,12 @@ class TelemetryModel with ChangeNotifier {
 
   List<TelemetryData> get dataPoints => _dataPoints;
 
-  double _currentSpeed = 0.0;
-  double _currentRpm = 0.0;
-  double _currentThrottle = 0.0;
-  double _currentBrake = 0.0;
-  double _currentLatitude = 0.0;
-  double _currentLongitude = 0.0;
-  double _currentAltitude = 0.0;
+  TelemetryData? get latestData => _dataPoints.isNotEmpty ? _dataPoints.last : null;
+
+  double get currentSpeed => latestData?.speed ?? 0.0;
+  double get currentRpm => latestData?.rpm ?? 0.0;
+  double get currentThrottle => latestData?.throttle ?? 0.0;
+  double get currentBrake => latestData?.brake ?? 0.0;
 
   // Update telemetry data
   void updateTelemetry({
@@ -45,22 +57,14 @@ class TelemetryModel with ChangeNotifier {
     double? longitude,
     double? altitude,
   }) {
-    _currentSpeed = speed ?? _currentSpeed;
-    _currentRpm = rpm ?? _currentRpm;
-    _currentThrottle = throttle ?? _currentThrottle;
-    _currentBrake = brake ?? _currentBrake;
-    _currentLatitude = latitude ?? _currentLatitude;
-    _currentLongitude = longitude ?? _currentLongitude;
-    _currentAltitude = altitude ?? _currentAltitude;
-
     final dataPoint = TelemetryData(
-      speed: _currentSpeed,
-      rpm: _currentRpm,
-      throttle: _currentThrottle,
-      brake: _currentBrake,
-      latitude: _currentLatitude,
-      longitude: _currentLongitude,
-      altitude: _currentAltitude,
+      speed: speed ?? currentSpeed,
+      rpm: rpm ?? currentRpm,
+      throttle: throttle ?? currentThrottle,
+      brake: brake ?? currentBrake,
+      latitude: latitude ?? latestData?.latitude ?? 0.0,
+      longitude: longitude ?? latestData?.longitude ?? 0.0,
+      altitude: altitude ?? latestData?.altitude ?? 0.0,
       timestamp: DateTime.now().toUtc(),
     );
     _dataPoints.add(dataPoint);

@@ -17,7 +17,7 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
   final FlutterBlueClassic _flutterBlue = FlutterBlueClassic();
   bool _isScanning = false;
   List<BluetoothDevice> _devices = [];
-  StreamSubscription<BluetoothDevice>? _scanSubscription; // Changed type
+  StreamSubscription<BluetoothDevice>? _scanSubscription;
 
   @override
   void initState() {
@@ -42,7 +42,7 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
     // Listen to bluetooth devices
     _scanSubscription = _flutterBlue.scanResults.listen((device) {
       setState(() {
-        if (!_devices.any((d) => d.address == device.address)) { // Avoid duplicates
+        if (!_devices.any((d) => d.address == device.address)) {
           _devices.add(device);
         }
       });
@@ -66,16 +66,24 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
 
   // Connect to selected device
   void _connectToDevice(BluetoothDevice device) async {
-    _stopScan(); // Ensure scanning is stopped
-    logger.i('Connecting to device: ${device.address}');
-    await _bluetoothService.connectToDevice(device.address, context); // Pass device.address
-    // Show a SnackBar to inform the user
-    if (mounted) {
+    _stopScan();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    try {
+      await _bluetoothService.connectToDevice(device.address, context);
+      Navigator.pop(context); // Close the progress dialog
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text((device.name?.isNotEmpty ?? false) ? device.name! : 'Unknown Device')),
+        SnackBar(content: Text('Connected to ${device.name ?? 'Device'}')),
       );
-      // Navigate back to the previous screen or to telemetry display screen
       Navigator.pop(context);
+    } catch (e) {
+      Navigator.pop(context); // Close the progress dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to connect: $e')),
+      );
     }
   }
 
@@ -108,6 +116,7 @@ class ObdConnectionScreenState extends State<ObdConnectionScreen> {
                     BluetoothDevice device = _devices[index];
                     String deviceName = (device.name?.isNotEmpty ?? false) ? device.name! : 'Unknown Device';
                     return ListTile(
+                      leading: const Icon(Icons.bluetooth),
                       title: Text(deviceName),
                       subtitle: Text(device.address),
                       onTap: () => _connectToDevice(device),
