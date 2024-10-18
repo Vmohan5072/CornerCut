@@ -5,7 +5,7 @@ import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'package:nmea/nmea.dart';
 import 'package:logger/logger.dart' as app_logger;
 
-/// A data class to hold GPS information.
+// Make sure GpsData is publicly accessible
 class GpsData {
   final double latitude;
   final double longitude;
@@ -25,7 +25,6 @@ class GpsData {
   }
 }
 
-/// Service to handle GPS data from GPS module using Bluetooth Classic and NMEA parsing.
 class GpsService {
   final app_logger.Logger _logger = app_logger.Logger();
   final FlutterBlueClassic _flutterBlue = FlutterBlueClassic();
@@ -33,24 +32,22 @@ class GpsService {
   final StreamController<GpsData> _gpsDataController = StreamController.broadcast();
   String _nmeaBuffer = '';
 
-  /// Exposes a stream of [GpsData] for other parts of the app to listen to.
+  StreamSubscription<Uint8List>? _readSubscription;
+
   Stream<GpsData> get gpsDataStream => _gpsDataController.stream;
 
-  /// NMEA Decoder instance with registered sentence types.
   final NmeaDecoder _nmeaDecoder = NmeaDecoder(onlyAllowValid: true)
     ..registerTalkerSentence('GGA', (line) => GgaSentence(raw: line))
     ..registerTalkerSentence('RMC', (line) => RmcSentence(raw: line));
 
   Future<void> initialize() async {
     try {
-      // Check if Bluetooth is supported.
       bool isSupported = await _flutterBlue.isSupported;
       if (!isSupported) {
         _logger.e('Bluetooth is not supported on this device.');
         return;
       }
 
-      // Check if Bluetooth is enabled.
       bool isEnabled = await _flutterBlue.isEnabled;
       if (!isEnabled) {
         _flutterBlue.turnOn();
@@ -58,109 +55,169 @@ class GpsService {
       }
 
       _logger.i('Starting discovery for GPS module.');
-      // Start discovering Bluetooth devices.
-      _flutterBlue.startScan();
+      List<BluetoothDevice> devices = await scanForGpsDevices();
 
-      _flutterBlue.scanResults.listen((device) async {
-        if (device.name!.isNotEmpty && (device.name == 'Garmin GLO' || device.name!.contains('GPS'))) { //Looking for Garmin GLO as test device as well
-          _logger.i('GPS module found. Attempting to connect to ${device.address}.');
-          _flutterBlue.stopScan();
-
-          // Attempt to establish a Bluetooth connection.
-          _connection = await _flutterBlue.connect(device.address);
-          _logger.i('Connected to GPS module at ${device.address}.');
-          _listenToNmeaData();
-        }
-      });
+      if (devices.isNotEmpty) {
+        BluetoothDevice gpsDevice = devices.first;
+        _logger.i('GPS module found: ${gpsDevice.name} [${gpsDevice.address}]. Attempting to connect.');
+        await connectToGpsDevice(gpsDevice.address);
+      } else {
+        _logger.w('No GPS module found.');
+      }
     } catch (e) {
       _logger.e('Error initializing GPS Service: $e');
     }
   }
 
-  /// Listens to incoming NMEA data from the GPS module.
-  void _listenToNmeaData() {
-    _connection?.input?.listen(
-      (Uint8List data) {
-        String nmeaSentence = utf8.decode(data);
+  Future<List<BluetoothDevice>> scanForGpsDevices({Duration timeout = const Duration(seconds: 5)}) async {
+    List<BluetoothDevice> gpsDevices = [];
+    Completer<List<BluetoothDevice>> completer = Completer();
 
-        // Buffer incoming data to handle incomplete NMEA sentences.
-        _nmeaBuffer += nmeaSentence;
+    try {
+      _logger.i('Starting Bluetooth scan for GPS devices.');
+      _flutterBlue.startScan();
 
-        // Split the buffer into individual sentences.
-        List<String> sentences = _nmeaBuffer.split('\r\n');
-        _nmeaBuffer = sentences.removeLast();
+      StreamSubscription<BluetoothDevice>? scanSubscription;
 
-        for (String sentence in sentences) {
-          if (sentence.isNotEmpty) {
-            _processNmeaSentence(sentence);
+      scanSubscription = _flutterBlue.scanResults.listen((BluetoothDevice device) {
+        if (device.name != null &&
+            device.name!.isNotEmpty &&
+            (device.name!.toLowerCase().contains('gps') || device.name!.toLowerCase().contains('garmin'))) {
+          if (!gpsDevices.contains(device)) {
+            gpsDevices.add(device);
+            _logger.i('Found GPS device: ${device.name} [${device.address}]');
           }
         }
-      },
-      onDone: () {
-        _logger.i('Disconnected from GPS module.');
-        _connection = null;
-      },
-      onError: (error) {
-        _logger.e('Error while listening to GPS module: $error');
-      },
-    );
+      });
+
+      await Future.delayed(timeout);
+      _flutterBlue.stopScan();
+      scanSubscription?.cancel();
+
+      _logger.i('Bluetooth scan completed. Found ${gpsDevices.length} GPS devices.');
+      completer.complete(gpsDevices);
+    } catch (e) {
+      _logger.e('Error during GPS Bluetooth scanning: $e');
+      completer.completeError(e);
+    }
+
+    return completer.future;
   }
 
-  /// Processes a single NMEA sentence.
+  // Connect to GPS device and start listening to data
+  Future<void> connectToGpsDevice(String deviceAddress) async {
+    try {
+      _logger.i('Connecting to GPS device: $deviceAddress');
+      _connection = await _flutterBlue.connect(deviceAddress);
+      _logger.i('Connected to GPS device with address: $deviceAddress');
+
+      // Listen to incoming data
+      _readSubscription = _connection?.input?.listen((data) {
+        String response = utf8.decode(data);
+        _logger.d('GPS Data received: $response');
+        _processNmeaSentence(response);
+      }, onDone: () {
+        _logger.w('Disconnected from GPS device with address: $deviceAddress');
+        _connection = null;
+      }, onError: (error) {
+        _logger.e('Error in GPS connection: $error');
+        _connection = null;
+      });
+
+      // Initialize GPS communication if necessary
+      _initializeGps();
+    } catch (e) {
+      _logger.e('Error connecting to GPS device: $e');
+      throw e; // Propagate the error to handle it in the UI
+    }
+  }
+
+  // Initialize GPS communication
+  void _initializeGps() {
+    // Example: Send initialization commands if required by GPS device
+    sendData('INIT_COMMAND\r');
+    Future.delayed(const Duration(seconds: 2));
+
+    // Start periodic data requests if needed
+    // For many GPS devices, data is sent automatically, so this might not be necessary
+  }
+
+  // Send data to the connected GPS device
+  void sendData(String data) {
+    if (_connection != null && _connection!.isConnected) {
+      _connection!.output.add(utf8.encode(data));
+      _logger.i('Sent GPS data: $data');
+    } else {
+      _logger.w('No GPS device connected.');
+    }
+  }
+
+  // Process incoming NMEA sentence
   void _processNmeaSentence(String sentence) {
     try {
-      // Decode the NMEA sentence.
-      final NmeaSentence? nmeaSentence = _nmeaDecoder.decode(sentence);
-      if (nmeaSentence == null) {
-        _logger.w('Failed to decode NMEA sentence: $sentence');
-        return;
-      }
+      // Buffer incoming data to handle incomplete sentences
+      _nmeaBuffer += sentence;
 
-      if (nmeaSentence is GgaSentence) {
-        double? latitude = nmeaSentence.latitude;
-        double? longitude = nmeaSentence.longitude;
-        double? altitude = nmeaSentence.altitude;
+      // Split buffer into individual sentences
+      List<String> sentences = _nmeaBuffer.split('\r\n');
+      _nmeaBuffer = sentences.removeLast(); // Keep incomplete sentence in buffer
 
-        if (latitude != null && longitude != null) {
-          GpsData gpsData = GpsData(
-            latitude: latitude,
-            longitude: longitude,
-            altitude: altitude ?? 0.0,
-            timestamp: DateTime.now().toUtc(),
-          );
-          _gpsDataController.add(gpsData);
-          _logger.d('GPS Data updated: $gpsData');
-        }
-      } else if (nmeaSentence is RmcSentence) {
-        double? latitude = nmeaSentence.latitude;
-        double? longitude = nmeaSentence.longitude;
-        DateTime? timestamp = _parseDateTime(nmeaSentence.date, nmeaSentence.time);
+      for (String s in sentences) {
+        if (s.isNotEmpty) {
+          // Decode the NMEA sentence
+          final NmeaSentence? nmeaSentence = _nmeaDecoder.decode(s);
+          if (nmeaSentence == null) {
+            _logger.w('Failed to decode NMEA sentence: $s');
+            continue;
+          }
 
-        if (latitude != null && longitude != null && timestamp != null) {
-          GpsData gpsData = GpsData(
-            latitude: latitude,
-            longitude: longitude,
-            altitude: 0.0,
-            timestamp: timestamp,
-          );
-          _gpsDataController.add(gpsData);
-          _logger.d('GPS Data updated: $gpsData');
+          if (nmeaSentence is GgaSentence) {
+            double? latitude = nmeaSentence.latitude;
+            double? longitude = nmeaSentence.longitude;
+            double? altitude = nmeaSentence.altitude;
+
+            if (latitude != null && longitude != null) {
+              GpsData gpsData = GpsData(
+                latitude: latitude,
+                longitude: longitude,
+                altitude: altitude ?? 0.0,
+                timestamp: DateTime.now().toUtc(),
+              );
+              _gpsDataController.add(gpsData);
+              _logger.i('GPS Data updated: $gpsData');
+            }
+          } else if (nmeaSentence is RmcSentence) {
+            double? latitude = nmeaSentence.latitude;
+            double? longitude = nmeaSentence.longitude;
+            DateTime? timestamp = _parseDateTime(nmeaSentence.date, nmeaSentence.time);
+
+            if (latitude != null && longitude != null && timestamp != null) {
+              GpsData gpsData = GpsData(
+                latitude: latitude,
+                longitude: longitude,
+                altitude: 0.0, // Altitude not available in RMC
+                timestamp: timestamp,
+              );
+              _gpsDataController.add(gpsData);
+              _logger.i('GPS Data updated: $gpsData');
+            }
+          }
         }
       }
     } catch (e) {
-      _logger.e('Error parsing NMEA sentence: $e');
+      _logger.e('Error processing NMEA sentence: $e');
     }
   }
 
   /// Parses date and time from RMC sentence fields.
   DateTime? _parseDateTime(String date, String time) {
     try {
-      // Date format: DD/MM/YY
+      // Date format: DDMMYY
       int day = int.parse(date.substring(0, 2));
       int month = int.parse(date.substring(2, 4));
       int year = int.parse(date.substring(4, 6)) + 2000;
 
-      // Time format: HH:MM:SS
+      // Time format: HHMMSS
       int hour = int.parse(time.substring(0, 2));
       int minute = int.parse(time.substring(2, 4));
       int second = int.parse(time.substring(4, 6));
@@ -176,9 +233,12 @@ class GpsService {
   void dispose() {
     _gpsDataController.close();
     _connection?.finish(); // Close the connection
+    _readSubscription?.cancel();
+    // Removed undefined variable _obdTimer
   }
 }
 
+/// Custom GGA Sentence for parsing GGA NMEA sentences.
 class GgaSentence extends TalkerSentence {
   GgaSentence({required super.raw});
 

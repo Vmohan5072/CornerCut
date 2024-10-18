@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class OverlaySettings extends StatefulWidget {
   final Map<String, bool> initialSettings;
-  final Function(Map<String, bool>) onSettingsChanged;
+  final Function(Map<String, bool>)? onSettingsChanged;
 
   const OverlaySettings({
     super.key,
@@ -29,6 +29,7 @@ class OverlaySettingsState extends State<OverlaySettings> {
       color: Colors.black87,
       padding: const EdgeInsets.all(16.0),
       child: ListView(
+        shrinkWrap: true,
         children: _settings.keys.map((key) {
           return CheckboxListTile(
             title: Text(key),
@@ -37,7 +38,9 @@ class OverlaySettingsState extends State<OverlaySettings> {
             onChanged: (value) {
               setState(() {
                 _settings[key] = value!;
-                widget.onSettingsChanged(_settings);
+                if (widget.onSettingsChanged != null) {
+                  widget.onSettingsChanged!(_settings);
+                }
               });
             },
           );

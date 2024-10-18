@@ -7,7 +7,7 @@ import '../services/permission_service.dart';
 import '../widgets/lap_timer.dart';
 import '../models/telemetry_model.dart';
 import '../widgets/telemetry_dashboard.dart';
-import '../screens/settings_screen.dart';
+import 'settings_screen.dart';
 import '../widgets/lap_map.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -114,6 +114,8 @@ class HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// Additional screens used in the bottom navigation bar
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -123,13 +125,7 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('CornerCut Dashboard'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bluetooth),
-            onPressed: () {
-              Navigator.pushNamed(context, '/obd-connection');
-            },
-            tooltip: 'Connect OBD-II Device',
-          ),
+          // Removed OBD-II and GPS connection buttons
           IconButton(
             icon: const Icon(Icons.video_library),
             onPressed: () {

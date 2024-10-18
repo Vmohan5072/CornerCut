@@ -17,30 +17,43 @@ class BluetoothService {
   StreamSubscription<Uint8List>? _readSubscription;
   Timer? _obdTimer;
 
-  // Start scanning for devices
-  void startScan() {
-    _flutterBlue.startScan();
+  // Scan for available Bluetooth devices and return a list
+  Future<List<BluetoothDevice>> scanForDevices({Duration timeout = const Duration(seconds: 5)}) async {
+    List<BluetoothDevice> devices = [];
+    Completer<List<BluetoothDevice>> completer = Completer();
 
-    _stateSubscription = _flutterBlue.adapterState.listen((state) {
-      _logger.i('Bluetooth Adapter State: $state');
-      if (state == BluetoothAdapterState.off) {
-        _logger.w('Bluetooth is turned off.');
-      }
-    });
-  }
+    try {
+      _logger.i('Starting Bluetooth scan for devices.');
+      _flutterBlue.startScan();
 
-  // Stop scanning
-  void stopScan() {
-    _flutterBlue.stopScan();
-    _scanSubscription?.cancel();
-    _scanSubscription = null;
+      _scanSubscription = _flutterBlue.scanResults.listen((BluetoothDevice device) {
+        if (device.name != null && device.name!.isNotEmpty && !devices.contains(device)) {
+          devices.add(device);
+          _logger.i('Found device: ${device.name} [${device.address}]');
+        }
+      });
+
+      // Wait for the specified timeout
+      await Future.delayed(timeout);
+      _flutterBlue.stopScan();
+
+      _scanSubscription?.cancel();
+
+      _logger.i('Bluetooth scan completed. Found ${devices.length} devices.');
+      completer.complete(devices);
+    } catch (e) {
+      _logger.e('Error during Bluetooth scanning: $e');
+      completer.completeError(e);
+    }
+
+    return completer.future;
   }
 
   // Connect to a device and start communication
   Future<void> connectToDevice(String deviceAddress, BuildContext context) async {
     try {
       _logger.i('Connecting to device: $deviceAddress');
-      _connection = await _flutterBlue.connect(deviceAddress); // Pass deviceAddress
+      _connection = await _flutterBlue.connect(deviceAddress);
       _logger.i('Connected to device with address: $deviceAddress');
 
       // Listen to incoming data
@@ -60,6 +73,7 @@ class BluetoothService {
       _initializeObd();
     } catch (e) {
       _logger.e('Error connecting to device: $e');
+      throw e; // Propagate the error to handle it in the UI
     }
   }
 
@@ -67,17 +81,17 @@ class BluetoothService {
   void _initializeObd() {
     // Reset device
     sendData('ATZ\r');
-    Future.delayed(Duration(seconds: 2));
+    Future.delayed(const Duration(seconds: 2));
 
     // Set protocol to automatic
     sendData('ATSP0\r');
-    Future.delayed(Duration(milliseconds: 500));
+    Future.delayed(const Duration(milliseconds: 500));
 
     // Turn off echo
     sendData('ATE0\r');
-    Future.delayed(Duration(milliseconds: 500));
+    Future.delayed(const Duration(milliseconds: 500));
 
-    _obdTimer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _obdTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       sendData('010D\r'); // PID for vehicle speed
       sendData('010C\r'); // PID for RPM
       sendData('0111\r'); // PID for Throttle Position
@@ -167,7 +181,7 @@ class BluetoothService {
   // Disconnect from the OBD device
   void disconnect() {
     _readSubscription?.cancel();
-    _connection?.finish(); //gracefully close the connection
+    _connection?.finish(); // Gracefully close the connection
     _connection = null;
     _obdTimer?.cancel();
     _logger.i('Disconnected from OBD device');
