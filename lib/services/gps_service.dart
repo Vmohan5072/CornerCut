@@ -5,7 +5,6 @@ import 'package:flutter_blue_classic/flutter_blue_classic.dart';
 import 'package:nmea/nmea.dart';
 import 'package:logger/logger.dart' as app_logger;
 
-// Make sure GpsData is publicly accessible
 class GpsData {
   final double latitude;
   final double longitude;
@@ -37,7 +36,6 @@ class GpsService {
   Stream<GpsData> get gpsDataStream => _gpsDataController.stream;
 
   GpsData? _latestGpsData;
-
   GpsData? get latestGpsData => _latestGpsData;
 
   final NmeaDecoder _nmeaDecoder = NmeaDecoder(onlyAllowValid: true)
@@ -102,7 +100,13 @@ class GpsService {
       completer.complete(gpsDevices);
     } catch (e) {
       _logger.e('Error during GPS Bluetooth scanning: $e');
+      _flutterBlue.stopScan(); // Ensure scanning stops
       completer.completeError(e);
+    } finally {
+      // Ensure the completer completes even if there's an error
+      if (!completer.isCompleted) {
+        completer.complete(gpsDevices);
+      }
     }
 
     return completer.future;
@@ -129,30 +133,30 @@ class GpsService {
       });
 
       // Initialize GPS communication if necessary
-      _initializeGps();
+      await _initializeGps();
     } catch (e) {
       _logger.e('Error connecting to GPS device: $e');
-      throw e; // Propagate the error to handle it in the UI
+      throw e;
     }
   }
 
   // Initialize GPS communication
-  void _initializeGps() {
-    // Example: Send initialization commands if required by GPS device
+  Future<void> _initializeGps() async {
     sendData('INIT_COMMAND\r');
-    Future.delayed(const Duration(seconds: 2));
-
-    // Start periodic data requests if needed
-    // For many GPS devices, data is sent automatically, so this might not be necessary
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   // Send data to the connected GPS device
   void sendData(String data) {
     if (_connection != null && _connection!.isConnected) {
-      _connection!.output.add(utf8.encode(data));
-      _logger.i('Sent GPS data: $data');
+      try {
+        _connection!.output.add(utf8.encode(data));
+        _logger.i('Sent GPS data: $data');
+      } catch (e) {
+        _logger.e('Failed to send data: $e');
+      }
     } else {
-      _logger.w('No GPS device connected.');
+      _logger.w('No device connected or connection lost.');
     }
   }
 
@@ -164,7 +168,7 @@ class GpsService {
 
       // Split buffer into individual sentences
       List<String> sentences = _nmeaBuffer.split('\r\n');
-      _nmeaBuffer = sentences.removeLast(); // Keep incomplete sentence in buffer
+      _nmeaBuffer = sentences.removeLast();
 
       for (String s in sentences) {
         if (s.isNotEmpty) {
@@ -200,7 +204,7 @@ class GpsService {
               GpsData gpsData = GpsData(
                 latitude: latitude,
                 longitude: longitude,
-                altitude: 0.0, // Altitude not available in RMC
+                altitude: 0.0,
                 timestamp: timestamp,
               );
               _latestGpsData = gpsData; // Store latest data

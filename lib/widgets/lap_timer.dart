@@ -1,15 +1,15 @@
+
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:math';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../models/lap_model.dart';
+import '../models/lap_timer_model.dart';
 import '../services/gps_service.dart';
-import 'dart:math';
 
 class LapTimer extends StatefulWidget {
-  final String mode; // 'Track' or 'Autocross'
-
-  const LapTimer({super.key, this.mode = 'Track'});
+  const LapTimer({super.key});
 
   @override
   LapTimerState createState() => LapTimerState();
@@ -19,10 +19,6 @@ class LapTimerState extends State<LapTimer> {
   final Stopwatch _stopwatch = Stopwatch();
   Timer? _timer;
   final Logger logger = Logger();
-
-  GpsData? _startPosition;
-  GpsData? _endPosition;
-  GpsData? _lapPoint;
 
   StreamSubscription<GpsData>? _gpsSubscription;
   GpsData? _currentPosition;
@@ -37,18 +33,21 @@ class LapTimerState extends State<LapTimer> {
     final gpsService = Provider.of<GpsService>(context, listen: false);
     _gpsSubscription = gpsService.gpsDataStream.listen((GpsData gpsData) {
       _currentPosition = gpsData;
-      if (widget.mode == 'Autocross') {
-        _checkAutocrossPositions();
+      final lapTimerModel = Provider.of<LapTimerModel>(context, listen: false);
+      final mode = lapTimerModel.mode;
+
+      if (mode == 'Autocross') {
+        _checkAutocrossPositions(lapTimerModel);
       } else {
-        _checkTrackPosition();
+        _checkTrackPosition(lapTimerModel);
       }
     });
   }
 
-  void _checkTrackPosition() {
-    if (_lapPoint == null || _currentPosition == null) return;
+  void _checkTrackPosition(LapTimerModel lapTimerModel) {
+    if (lapTimerModel.lapPoint == null || _currentPosition == null) return;
 
-    double distance = _calculateDistance(_currentPosition!, _lapPoint!);
+    double distance = _calculateDistance(_currentPosition!, lapTimerModel.lapPoint!);
     if (distance <= 10.0) {
       if (_stopwatch.isRunning) {
         _recordLap();
@@ -58,16 +57,16 @@ class LapTimerState extends State<LapTimer> {
     }
   }
 
-  void _checkAutocrossPositions() {
-    if (_startPosition == null || _endPosition == null || _currentPosition == null) return;
+  void _checkAutocrossPositions(LapTimerModel lapTimerModel) {
+    if (lapTimerModel.startPosition == null || lapTimerModel.endPosition == null || _currentPosition == null) return;
 
     if (!_stopwatch.isRunning) {
-      double startDistance = _calculateDistance(_currentPosition!, _startPosition!);
+      double startDistance = _calculateDistance(_currentPosition!, lapTimerModel.startPosition!);
       if (startDistance <= 10.0) {
         _startStopwatch();
       }
     } else {
-      double endDistance = _calculateDistance(_currentPosition!, _endPosition!);
+      double endDistance = _calculateDistance(_currentPosition!, lapTimerModel.endPosition!);
       if (endDistance <= 10.0) {
         _stopStopwatch();
         _recordLap();
@@ -124,46 +123,19 @@ class LapTimerState extends State<LapTimer> {
     setState(() {
       Provider.of<LapModel>(context, listen: false).addLapTime(lapTime);
       _stopwatch.reset();
-      if (widget.mode == 'Track') {
+      final lapTimerModel = Provider.of<LapTimerModel>(context, listen: false);
+      if (lapTimerModel.mode == 'Track') {
         _stopwatch.start();
       }
       logger.i('Lap recorded: $lapTime');
     });
   }
 
-  void _markPosition() {
-    if (_currentPosition == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('GPS data not available')),
-      );
-      return;
-    }
-    setState(() {
-      if (widget.mode == 'Autocross') {
-        if (_startPosition == null) {
-          _startPosition = _currentPosition;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Start position marked')),
-          );
-        } else if (_endPosition == null) {
-          _endPosition = _currentPosition;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('End position marked')),
-          );
-        } else {
-          _startPosition = _currentPosition;
-          _endPosition = null;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Start position re-marked. Please mark end position.')),
-          );
-        }
-      } else {
-        _lapPoint = _currentPosition;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Lap point marked')),
-        );
-      }
-    });
+  @override
+  void dispose() {
+    _gpsSubscription?.cancel();
+    _timer?.cancel();
+    super.dispose();
   }
 
   String _formatDuration(Duration duration) {
@@ -175,22 +147,16 @@ class LapTimerState extends State<LapTimer> {
   }
 
   @override
-  void dispose() {
-    _gpsSubscription?.cancel();
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final lapModel = Provider.of<LapModel>(context);
+    final lapTimerModel = Provider.of<LapTimerModel>(context);
     final elapsedTime = _formatDuration(_stopwatch.elapsed);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          '${widget.mode} Mode',
+          '${lapTimerModel.mode} Mode',
           style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
@@ -200,18 +166,8 @@ class LapTimerState extends State<LapTimer> {
         ),
         const SizedBox(height: 20),
         ElevatedButton(
-          onPressed: _markPosition,
-          child: Text(widget.mode == 'Autocross' ? 'Mark Position' : 'Mark Lap Point'),
-        ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 10,
-          children: [
-            ElevatedButton(
-              onPressed: _resetStopwatch,
-              child: const Text('Reset'),
-            ),
-          ],
+          onPressed: _resetStopwatch,
+          child: const Text('Reset'),
         ),
         const SizedBox(height: 20),
         SizedBox(
