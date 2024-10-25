@@ -197,17 +197,42 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
-class LapTimerScreen extends StatelessWidget {
+class LapTimerScreen extends StatefulWidget {
   const LapTimerScreen({super.key});
+
+  @override
+  _LapTimerScreenState createState() => _LapTimerScreenState();
+}
+
+class _LapTimerScreenState extends State<LapTimerScreen> {
+  String _selectedMode = 'Track'; // Default mode
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lap Timer'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (String value) {
+              setState(() {
+                _selectedMode = value;
+              });
+            },
+            itemBuilder: (BuildContext context) {
+              return {'Track', 'Autocross'}.map((String choice) {
+                return PopupMenuItem<String>(
+                  value: choice,
+                  child: Text(choice + ' Mode'),
+                );
+              }).toList();
+            },
+            icon: const Icon(Icons.more_vert),
+          ),
+        ],
       ),
-      body: const Center(
-        child: LapTimer(),
+      body: Center(
+        child: LapTimer(mode: _selectedMode),
       ),
     );
   }

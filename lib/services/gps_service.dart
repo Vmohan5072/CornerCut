@@ -36,6 +36,10 @@ class GpsService {
 
   Stream<GpsData> get gpsDataStream => _gpsDataController.stream;
 
+  GpsData? _latestGpsData;
+
+  GpsData? get latestGpsData => _latestGpsData;
+
   final NmeaDecoder _nmeaDecoder = NmeaDecoder(onlyAllowValid: true)
     ..registerTalkerSentence('GGA', (line) => GgaSentence(raw: line))
     ..registerTalkerSentence('RMC', (line) => RmcSentence(raw: line));
@@ -183,6 +187,7 @@ class GpsService {
                 altitude: altitude ?? 0.0,
                 timestamp: DateTime.now().toUtc(),
               );
+              _latestGpsData = gpsData; // Store latest data
               _gpsDataController.add(gpsData);
               _logger.i('GPS Data updated: $gpsData');
             }
@@ -198,6 +203,7 @@ class GpsService {
                 altitude: 0.0, // Altitude not available in RMC
                 timestamp: timestamp,
               );
+              _latestGpsData = gpsData; // Store latest data
               _gpsDataController.add(gpsData);
               _logger.i('GPS Data updated: $gpsData');
             }

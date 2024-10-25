@@ -178,7 +178,7 @@ class SettingsScreenState extends State<SettingsScreen> {
                         if (service is BluetoothService) {
                           await service.connectToDevice(device.address, context);
                         } else if (service is GpsService) {
-                          await service.connectToGpsDevice(device.address, context: context);
+                          await service.connectToGpsDevice(device.address);
                         }
 
                         Navigator.pop(context); // Close the connecting dialog
