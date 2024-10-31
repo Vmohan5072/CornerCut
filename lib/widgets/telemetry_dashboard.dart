@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/telemetry_model.dart';
 import 'overlay_widgets.dart';
-
+// TODO: Add more telemetry items
 class TelemetryDashboard extends StatelessWidget {
   const TelemetryDashboard({super.key});
 

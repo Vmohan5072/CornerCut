@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:async'; // Import added for StreamSubscription
+import 'dart:async';
 import '../services/gps_service.dart';
 import '../models/lap_timer_model.dart';
 import 'home_screen.dart';
@@ -9,7 +9,7 @@ class LapPointMarkingScreen extends StatefulWidget {
   const LapPointMarkingScreen({super.key});
 
   @override
-  LapPointMarkingScreenState createState() => LapPointMarkingScreenState(); // Made the state class public
+  LapPointMarkingScreenState createState() => LapPointMarkingScreenState();
 }
 
 class LapPointMarkingScreenState extends State<LapPointMarkingScreen> {

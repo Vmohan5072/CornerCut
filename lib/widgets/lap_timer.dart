@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math';
+import 'dart:math'; // For trigonometric functions
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import '../models/lap_model.dart';
@@ -9,7 +8,8 @@ import '../models/lap_timer_model.dart';
 import '../services/gps_service.dart';
 
 class LapTimer extends StatefulWidget {
-  const LapTimer({super.key});
+  final bool isLandscape;
+  const LapTimer({super.key, required this.isLandscape});
 
   @override
   LapTimerState createState() => LapTimerState();
@@ -131,11 +131,41 @@ class LapTimerState extends State<LapTimer> {
     });
   }
 
-  @override
-  void dispose() {
-    _gpsSubscription?.cancel();
-    _timer?.cancel();
-    super.dispose();
+  void _markPosition() {
+    if (_currentPosition == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('GPS data not available')),
+      );
+      return;
+    }
+
+    final lapTimerModel = Provider.of<LapTimerModel>(context, listen: false);
+    final mode = lapTimerModel.mode;
+
+    if (mode == 'Autocross') {
+      if (lapTimerModel.startPosition == null) {
+        lapTimerModel.setStartPosition(_currentPosition!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Start position marked')),
+        );
+      } else if (lapTimerModel.endPosition == null) {
+        lapTimerModel.setEndPosition(_currentPosition!);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('End position marked')),
+        );
+      } else {
+        lapTimerModel.setStartPosition(_currentPosition!);
+        lapTimerModel.setEndPosition(null);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Start position re-marked. Please mark end position.')),
+        );
+      }
+    } else {
+      lapTimerModel.setLapPoint(_currentPosition!);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lap point marked')),
+      );
+    }
   }
 
   String _formatDuration(Duration duration) {
@@ -147,43 +177,124 @@ class LapTimerState extends State<LapTimer> {
   }
 
   @override
+  void dispose() {
+    _gpsSubscription?.cancel();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final lapModel = Provider.of<LapModel>(context);
     final lapTimerModel = Provider.of<LapTimerModel>(context);
     final elapsedTime = _formatDuration(_stopwatch.elapsed);
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          '${lapTimerModel.mode} Mode',
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          elapsedTime,
-          style: const TextStyle(fontSize: 48.0, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: _resetStopwatch,
-          child: const Text('Reset'),
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 150,
-          child: ListView.builder(
-            itemCount: lapModel.lapTimes.length,
-            itemBuilder: (context, index) {
-              final lapTime = _formatDuration(lapModel.lapTimes[index]);
-              return ListTile(
-                title: Text('Lap ${index + 1}'),
-                trailing: Text(lapTime),
-              );
-            },
+    if (widget.isLandscape) {
+      // Landscape Layout
+      final bestLap = lapModel.bestLapTime != null ? _formatDuration(lapModel.bestLapTime!) : '--:--.--';
+      final lastLap = lapModel.lapTimes.isNotEmpty ? _formatDuration(lapModel.lapTimes.last) : '--:--.--';
+      final lapCount = lapModel.lapTimes.length;
+
+      return Container(
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Lap $lapCount',
+                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                elapsedTime,
+                style: const TextStyle(fontSize: 100.0, fontWeight: FontWeight.bold, color: Colors.redAccent),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Best Lap: $bestLap',
+                style: const TextStyle(fontSize: 30, color: Colors.white),
+              ),
+              Text(
+                'Last Lap: $lastLap',
+                style: const TextStyle(fontSize: 30, color: Colors.white),
+              ),
+            ],
           ),
         ),
-      ],
-    );
+      );
+    } else {
+      // Portrait Layout
+      String positionStatus;
+      if (lapTimerModel.mode == 'Autocross') {
+        if (lapTimerModel.startPosition == null) {
+          positionStatus = 'Start position not set';
+        } else if (lapTimerModel.endPosition == null) {
+          positionStatus = 'End position not set';
+        } else {
+          positionStatus = 'Start and End positions set';
+        }
+      } else {
+        if (lapTimerModel.lapPoint == null) {
+          positionStatus = 'Lap point not set';
+        } else {
+          positionStatus = 'Lap point set';
+        }
+      }
+
+      return SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '${lapTimerModel.mode} Mode',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              positionStatus,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              elapsedTime,
+              style: const TextStyle(fontSize: 48.0, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _markPosition,
+              child: Text(lapTimerModel.mode == 'Autocross' ? 'Mark Position' : 'Mark Lap Point'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                final lapTimerModel = Provider.of<LapTimerModel>(context, listen: false);
+                lapTimerModel.resetPositions();
+              },
+              child: const Text('Reset Positions'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _resetStopwatch,
+              child: const Text('Reset Timer'),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 150,
+              child: ListView.builder(
+                itemCount: lapModel.lapTimes.length,
+                itemBuilder: (context, index) {
+                  final lapTime = _formatDuration(lapModel.lapTimes[index]);
+                  return ListTile(
+                    title: Text('Lap ${index + 1}'),
+                    trailing: Text(lapTime),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

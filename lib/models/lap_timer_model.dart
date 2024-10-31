@@ -9,21 +9,29 @@ class LapTimerModel with ChangeNotifier {
 
   void setMode(String newMode) {
     mode = newMode;
+    resetPositions();
     notifyListeners();
   }
 
-  void setStartPosition(GpsData position) {
+  void setStartPosition(GpsData? position) {
     startPosition = position;
     notifyListeners();
   }
 
-  void setEndPosition(GpsData position) {
+  void setEndPosition(GpsData? position) {
     endPosition = position;
     notifyListeners();
   }
 
-  void setLapPoint(GpsData position) {
+  void setLapPoint(GpsData? position) {
     lapPoint = position;
+    notifyListeners();
+  }
+
+  void resetPositions() {
+    startPosition = null;
+    endPosition = null;
+    lapPoint = null;
     notifyListeners();
   }
 }

@@ -3,10 +3,8 @@ import 'package:provider/provider.dart';
 import 'models/telemetry_model.dart';
 import 'models/lap_model.dart';
 import 'models/lap_timer_model.dart';
+import 'models/session_model.dart';
 import 'screens/home_screen.dart';
-import 'screens/video_selection_screen.dart';
-import 'screens/settings_screen.dart';
-import 'screens/mode_selection_screen.dart';
 import 'services/gps_service.dart';
 import 'services/bluetooth_service.dart';
 import 'services/data_storage_service.dart';
@@ -18,6 +16,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => TelemetryModel()),
         ChangeNotifierProvider(create: (_) => LapModel()),
         ChangeNotifierProvider(create: (_) => LapTimerModel()),
+        ChangeNotifierProvider(create: (_) => SessionModel()),
         Provider(create: (_) => GpsService()),
         Provider(create: (_) => BluetoothService()),
         Provider(create: (_) => DataStorageService()),
@@ -53,12 +52,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/mode-selection',
+      initialRoute: '/',
       routes: {
         '/': (context) => const HomeScreen(),
-        '/mode-selection': (context) => const ModeSelectionScreen(),
-        '/video-selection': (context) => const VideoSelectionScreen(),
-        '/settings': (context) => const SettingsScreen(),
       },
     );
   }

@@ -28,7 +28,7 @@ class SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ListView(
         children: [
-          // Units Category
+          // Units
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
@@ -110,14 +110,14 @@ class SettingsScreenState extends State<SettingsScreen> {
                       'Throttle Brake Indicator': true,
                     },
                     onSettingsChanged: (updatedSettings) {
-                      // Handle the updated overlay settings
+                      // Handle updated overlay settings
                     },
                   );
                 },
               );
             },
           ),
-          // Additional settings options can be added here
+          // More settings can be added here
         ],
       ),
     );
