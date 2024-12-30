@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  CornerCut
 //
-//  Created by Vignesh on 12/29/24.
+//  Created by vmohan5072 on 12/29/24.
 //
 
 import SwiftUI
