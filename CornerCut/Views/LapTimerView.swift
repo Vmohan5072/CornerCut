@@ -83,22 +83,22 @@ struct LapTimerView: View {
         .padding(.horizontal, 20)
         .navigationBarBackButtonHidden(true) // Hide the default back button if needed
         .onAppear {
-            // Start location if needed
+            //Start location if needed
             locationManager.startUpdatingLocation()
             
-            // If Racebox detected, use Racebox coding
+            //If Racebox detected, use Racebox coding
             if session.usingExternalGPS {
                 raceBoxManager.startReadingData()
             }
             
-            // If using OBD2, start reading data (fill in later)
-            // obd2Manager.startReadingData()
+            //If using OBD2, start reading data (fill in later)
+            //obd2Manager.startReadingData()
         }
         .onDisappear {
-            // Stop managers when leaving view
+            //Stop managers when leaving view
             locationManager.stopUpdatingLocation()
             raceBoxManager.stopReadingData()
-            // obd2Manager.stopReadingData()
+            //obd2Manager.stopReadingData()
         }
     }
 }
@@ -123,25 +123,25 @@ extension LapTimerView {
         timer?.invalidate()
         timer = nil
         
-        // Record one final lap if needed
+        //Record one final lap if needed
         recordLap()
     }
     
     private func recordLap() {
-        // If we're not in a session, don't record
+        //If we're not in a session, don't record
         guard sessionActive else { return }
         
         let lapEndTime = Date()
         let lapTime = lapEndTime.timeIntervalSince(currentLapStartTime)
         
         let newLap = Lap(lapNumber: currentLapNumber, lapTime: lapTime)
-        // Append whatever was collected so far
+        //Append whatever was collected so far
         newLap.telemetryData.append(contentsOf: currentLapTelemetry)
         
-        // Store to this Session
+        //Store to this Session
         session.laps.append(newLap)
         
-        // Move to next lap
+        //Move to next lap
         currentLapNumber += 1
         currentLapStartTime = Date()
         currentLapTelemetry = []
@@ -153,9 +153,9 @@ extension LapTimerView {
         }
     }
     
-    /// Called by the Timer every 1/25th second (25 Hz)
+    /// Called by the Timer every 1/25th second (25 Hz) for racebox (TODO: revert to 1hz for iPhone GPS option)
     private func captureTelemetry() {
-        // Use RaceBox or phone’s GPS
+        //Use RaceBox or phone’s GPS depending on user choice
         let lat: Double
         let lon: Double
         let speedVal: Double
@@ -165,11 +165,11 @@ extension LapTimerView {
             lon = raceBoxManager.longitude
             speedVal = raceBoxManager.currentSpeed
         } else {
-            // iPhone Core Location
+            //Use iPhone Core Location
             let location = locationManager.currentLocation
             lat = location?.coordinate.latitude ?? 0
             lon = location?.coordinate.longitude ?? 0
-            // Core Location speed is in m/s
+            //iphone Location speed is in m/s by default
             speedVal = location?.speed ?? 0
         }
         
@@ -207,7 +207,7 @@ extension LapTimerView {
             spd = locationManager.currentLocation?.speed ?? 0
         }
         
-        // Convert m/s to mph
+        //Convert m/s to mph
         let mph = spd * 2.23694
         return String(format: "%.1f", mph)
     }

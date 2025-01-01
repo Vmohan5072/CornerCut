@@ -5,7 +5,7 @@ import SwiftData
 final class Lap {
     @Attribute(.unique) var id: UUID
     var lapNumber: Int
-    var lapTime: Double     // total seconds
+    var lapTime: Double // total seconds
     var telemetryData: [TelemetryData]
     
     init(lapNumber: Int, lapTime: Double) {

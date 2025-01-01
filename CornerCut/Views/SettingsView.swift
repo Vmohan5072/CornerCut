@@ -1,5 +1,5 @@
 import SwiftUI
-
+// TODO: Route from MeView to SettingsView
 struct SettingsView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @ObservedObject var obd2Manager: OBD2Manager
@@ -39,7 +39,7 @@ struct SettingsView: View {
                 }
                 
                 Section(header: Text("Appearance")) {
-                    // Light / Dark toggles
+                    // Dark mode toggles
                 }
             }
             .navigationTitle("Settings")

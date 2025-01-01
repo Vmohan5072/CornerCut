@@ -7,18 +7,19 @@ final class Session {
     var date: Date
     var trackName: String
     var laps: [Lap]
+    var customName: String?
+    var usingExternalGPS: Bool //is it using Racebox or not
 
-    // Example: store GPS source (internal or RaceBox)
-    var usingExternalGPS: Bool
-    
     init(
         trackName: String,
-        usingExternalGPS: Bool = false
+        usingExternalGPS: Bool = false,
+        customName: String? = nil //Default is blank
     ) {
         self.id = UUID()
         self.date = Date()
         self.trackName = trackName
         self.usingExternalGPS = usingExternalGPS
         self.laps = []
+        self.customName = customName
     }
 }

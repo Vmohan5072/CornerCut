@@ -12,7 +12,7 @@ final class TelemetryData {
     var latitude: Double
     var longitude: Double
     
-    // Add more fields as needed (gear, boost, etc.)
+    // Will add more datapoints once I figure out what the OBD reader can pull
 
     init(timestamp: Date,
          speed: Double,

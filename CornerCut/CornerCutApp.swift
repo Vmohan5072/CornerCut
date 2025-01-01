@@ -3,7 +3,7 @@ import SwiftData
 
 @main
 struct CornerCutApp: App {
-    // MARK: - SwiftData Model Container
+    // SwiftData container
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Session.self,
@@ -18,16 +18,14 @@ struct CornerCutApp: App {
         }
     }()
     
-    // MARK: - Managers
+    // Managers
     @StateObject var locationManager = LocationManager()
     @StateObject var raceBoxManager = RaceBoxManager()
     @StateObject var obd2Manager = OBD2Manager()
     
-    // MARK: - Body
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                // Provide the managers as environment objects
+            MainTabView()
                 .environmentObject(locationManager)
                 .environmentObject(raceBoxManager)
                 .environmentObject(obd2Manager)
