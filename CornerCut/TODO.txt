@@ -1,2 +1,8 @@
 Clean up Home page UI
-
+Work on Gopro data importing, overlaying, and exporting
+Work on in-session UI (horizontal only)
+Work on Drag Mode implementation
+Test device connections for OBD and RaceBox
+Source track list and data for established racetracks
+Use Apple Maps API for custom track data
+Work on gauge UI
