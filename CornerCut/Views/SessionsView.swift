@@ -14,13 +14,6 @@ struct SessionsView: View {
                 .onDelete(perform: deleteSession)
             }
             .navigationTitle("Sessions")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: addSampleSession) {
-                        Label("Add", systemImage: "plus")
-                    }
-                }
-            }
         }
     }
 
