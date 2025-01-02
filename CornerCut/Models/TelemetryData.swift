@@ -8,7 +8,6 @@ final class TelemetryData {
     var speed: Double
     var rpm: Double
     var throttle: Double
-    var brake: Double
     var latitude: Double
     var longitude: Double
     
@@ -18,7 +17,6 @@ final class TelemetryData {
          speed: Double,
          rpm: Double,
          throttle: Double,
-         brake: Double,
          latitude: Double,
          longitude: Double) {
         
@@ -27,7 +25,6 @@ final class TelemetryData {
         self.speed = speed
         self.rpm = rpm
         self.throttle = throttle
-        self.brake = brake
         self.latitude = latitude
         self.longitude = longitude
     }

@@ -6,6 +6,11 @@ final class BluetoothManager: NSObject, ObservableObject {
     static let shared = BluetoothManager() // Singleton instance
 
     private var centralManager: CBCentralManager!
+    private var connectedPeripheral: CBPeripheral?
+    private var obdServiceUUID = CBUUID(string: "FFF0") // Example UUID
+    private var obdCharacteristicUUID = CBUUID(string: "FFF1") // Example UUID
+    private var obdCharacteristic: CBCharacteristic?
+
     @Published var isConnected: Bool = false
     
     private override init() {
@@ -14,12 +19,20 @@ final class BluetoothManager: NSObject, ObservableObject {
     }
     
     func startScan() {
-        // You would scan for specific UUIDs of the RaceBox or OBD device
-        centralManager.scanForPeripherals(withServices: nil, options: nil)
+        print("Scanning for OBD2 devices...")
+        centralManager.scanForPeripherals(withServices: [obdServiceUUID], options: nil)
     }
     
     func stopScan() {
         centralManager.stopScan()
+    }
+    
+    func sendCommand(_ command: String) {
+        guard let peripheral = connectedPeripheral,
+              let characteristic = obdCharacteristic,
+              let data = command.data(using: .utf8) else { return }
+        
+        peripheral.writeValue(data, for: characteristic, type: .withResponse)
     }
 }
 
@@ -27,10 +40,9 @@ extension BluetoothManager: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-            // Ready to scan
-            startScan()
+            print("Bluetooth is powered on.")
         default:
-            break
+            print("Bluetooth not ready.")
         }
     }
     
@@ -38,28 +50,43 @@ extension BluetoothManager: CBCentralManagerDelegate {
                         didDiscover peripheral: CBPeripheral,
                         advertisementData: [String: Any],
                         rssi RSSI: NSNumber) {
-        // Check if this is the device we want
-        // If yes, connect
+        print("Discovered peripheral: \(peripheral.name ?? "Unknown")")
+        connectedPeripheral = peripheral
+        connectedPeripheral?.delegate = self
         centralManager.connect(peripheral, options: nil)
+        centralManager.stopScan()
     }
     
     func centralManager(_ central: CBCentralManager,
                         didConnect peripheral: CBPeripheral) {
-        // Mark as connected
+        print("Connected to peripheral: \(peripheral.name ?? "Unknown")")
         isConnected = true
-        // Typically, discover services/characteristics here
+        peripheral.discoverServices([obdServiceUUID])
+    }
+}
+
+extension BluetoothManager: CBPeripheralDelegate {
+    func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+        guard let services = peripheral.services else { return }
+        for service in services where service.uuid == obdServiceUUID {
+            peripheral.discoverCharacteristics([obdCharacteristicUUID], for: service)
+        }
     }
     
-    func centralManager(_ central: CBCentralManager,
-                        didFailToConnect peripheral: CBPeripheral,
-                        error: Error?) {
-        // Handle error
+    func peripheral(_ peripheral: CBPeripheral,
+                    didDiscoverCharacteristicsFor service: CBService,
+                    error: Error?) {
+        guard let characteristics = service.characteristics else { return }
+        for characteristic in characteristics where characteristic.uuid == obdCharacteristicUUID {
+            obdCharacteristic = characteristic
+            peripheral.setNotifyValue(true, for: characteristic)
+        }
     }
     
-    func centralManager(_ central: CBCentralManager,
-                        didDisconnectPeripheral peripheral: CBPeripheral,
-                        error: Error?) {
-        isConnected = false
-        // Reconnect logic if needed
+    func peripheral(_ peripheral: CBPeripheral,
+                    didUpdateValueFor characteristic: CBCharacteristic,
+                    error: Error?) {
+        guard let data = characteristic.value else { return }
+        OBD2Manager.shared.parseOBDResponse(data)
     }
 }

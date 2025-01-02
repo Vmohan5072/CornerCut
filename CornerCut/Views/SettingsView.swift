@@ -16,7 +16,7 @@ struct SettingsView: View {
                 // GPS Settings Section
                 Section(header: Text("GPS Settings")) {
                     Toggle("Use External GPS (RaceBox)", isOn: $useExternalGPS)
-                        .onChange(of: useExternalGPS) { _, newValue in
+                        .onChange(of: useExternalGPS, initial: true) { oldValue, newValue in
                             if newValue {
                                 raceBoxManager.startReadingData()
                             } else {
@@ -24,7 +24,7 @@ struct SettingsView: View {
                             }
                         }
                 }
-                
+
                 // OBD2 Connection Section
                 Section(header: Text("OBD2 Connection")) {
                     if bluetoothManager.isConnected {
@@ -40,9 +40,9 @@ struct SettingsView: View {
                 // Units Section
                 Section(header: Text("Units")) {
                     Toggle("Use Metric Units", isOn: $useMetricUnits)
-                        .onChange(of: useMetricUnits) { _, newValue in
-                            print("Units switched to \(newValue ? "Metric" : "Imperial")")
-                            // Add additional logic here if needed
+                        .onChange(of: useMetricUnits, initial: true) { oldValue, newValue in
+                            print("Units switched from \(oldValue ? "Metric" : "Imperial") to \(newValue ? "Metric" : "Imperial")")
+                            obd2Manager.switchUnits(toMetric: newValue)
                         }
                 }
             }

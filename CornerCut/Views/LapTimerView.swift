@@ -176,7 +176,6 @@ extension LapTimerView {
         // OBD2 data
         let rpmVal = obd2Manager.currentRPM
         let throttleVal = obd2Manager.throttle
-        let brakeVal = obd2Manager.brake
         
         // Create new TelemetryData
         let telemetry = TelemetryData(
@@ -184,7 +183,6 @@ extension LapTimerView {
             speed: speedVal,
             rpm: rpmVal,
             throttle: throttleVal,
-            brake: brakeVal,
             latitude: lat,
             longitude: lon
         )

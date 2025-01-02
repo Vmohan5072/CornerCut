@@ -4,9 +4,6 @@ struct StraightlineView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("Straightline Performance")
-                    .font(.largeTitle)
-                    .bold()
                 
                 List {
                     Text("0-60 mph")
@@ -18,7 +15,7 @@ struct StraightlineView: View {
                 }
             }
             .padding()
-            .navigationTitle("Performance")
+            .navigationTitle("Drag Mode")
         }
     }
 }
