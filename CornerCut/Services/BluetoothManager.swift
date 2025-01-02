@@ -2,11 +2,13 @@ import Foundation
 import CoreBluetooth
 import Combine
 
-class BluetoothManager: NSObject, ObservableObject {
+final class BluetoothManager: NSObject, ObservableObject {
+    static let shared = BluetoothManager() // Singleton instance
+
     private var centralManager: CBCentralManager!
     @Published var isConnected: Bool = false
     
-    override init() {
+    private override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
@@ -33,30 +35,30 @@ extension BluetoothManager: CBCentralManagerDelegate {
     }
     
     func centralManager(_ central: CBCentralManager,
-                       didDiscover peripheral: CBPeripheral,
-                       advertisementData: [String : Any],
-                       rssi RSSI: NSNumber) {
+                        didDiscover peripheral: CBPeripheral,
+                        advertisementData: [String: Any],
+                        rssi RSSI: NSNumber) {
         // Check if this is the device we want
         // If yes, connect
         centralManager.connect(peripheral, options: nil)
     }
     
     func centralManager(_ central: CBCentralManager,
-                       didConnect peripheral: CBPeripheral) {
+                        didConnect peripheral: CBPeripheral) {
         // Mark as connected
         isConnected = true
         // Typically, discover services/characteristics here
     }
     
     func centralManager(_ central: CBCentralManager,
-                       didFailToConnect peripheral: CBPeripheral,
-                       error: Error?) {
+                        didFailToConnect peripheral: CBPeripheral,
+                        error: Error?) {
         // Handle error
     }
     
     func centralManager(_ central: CBCentralManager,
-                       didDisconnectPeripheral peripheral: CBPeripheral,
-                       error: Error?) {
+                        didDisconnectPeripheral peripheral: CBPeripheral,
+                        error: Error?) {
         isConnected = false
         // Reconnect logic if needed
     }

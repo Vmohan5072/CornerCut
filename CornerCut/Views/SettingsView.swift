@@ -1,21 +1,22 @@
 import SwiftUI
-// TODO: Route from MeView to SettingsView
+
 struct SettingsView: View {
     @ObservedObject var bluetoothManager: BluetoothManager
     @ObservedObject var obd2Manager: OBD2Manager
     @ObservedObject var raceBoxManager: RaceBoxManager
-    
+
     @Environment(\.dismiss) var dismiss
-    
+    @AppStorage("useMetricUnits") private var useMetricUnits = false // Persistent storage for units
+
     @State private var useExternalGPS = false
-    
+
     var body: some View {
         NavigationView {
             Form {
+                // GPS Settings Section
                 Section(header: Text("GPS Settings")) {
                     Toggle("Use External GPS (RaceBox)", isOn: $useExternalGPS)
-                        .onChange(of: useExternalGPS) { oldValue, newValue in
-                            // handle toggling external GPS usage
+                        .onChange(of: useExternalGPS) { _, newValue in
                             if newValue {
                                 raceBoxManager.startReadingData()
                             } else {
@@ -24,22 +25,25 @@ struct SettingsView: View {
                         }
                 }
                 
+                // OBD2 Connection Section
                 Section(header: Text("OBD2 Connection")) {
                     if bluetoothManager.isConnected {
                         Text("OBD2 Connected")
+                            .foregroundColor(.green)
                     } else {
                         Button("Scan/Connect OBD2") {
                             bluetoothManager.startScan()
                         }
                     }
                 }
-                
+
+                // Units Section
                 Section(header: Text("Units")) {
-                    // e.g. metric / superior freedom units
-                }
-                
-                Section(header: Text("Appearance")) {
-                    // Dark mode toggles
+                    Toggle("Use Metric Units", isOn: $useMetricUnits)
+                        .onChange(of: useMetricUnits) { _, newValue in
+                            print("Units switched to \(newValue ? "Metric" : "Imperial")")
+                            // Add additional logic here if needed
+                        }
                 }
             }
             .navigationTitle("Settings")
