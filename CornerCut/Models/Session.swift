@@ -6,20 +6,21 @@ final class Session {
     @Attribute(.unique) var id: UUID
     var date: Date
     var trackName: String
-    var laps: [Lap]
+    var laps: [Lap] = []
     var customName: String?
-    var usingExternalGPS: Bool //is it using Racebox or not
+    var usingExternalGPS: Bool
+    var videoURL: URL? // Video file linked to this session
 
     init(
         trackName: String,
-        usingExternalGPS: Bool = false,
-        customName: String? = nil //Default is blank
+        usingExternalGPS: Bool,
+        customName: String? = nil,
+        date: Date = Date()
     ) {
         self.id = UUID()
-        self.date = Date()
         self.trackName = trackName
         self.usingExternalGPS = usingExternalGPS
-        self.laps = []
         self.customName = customName
+        self.date = date
     }
 }

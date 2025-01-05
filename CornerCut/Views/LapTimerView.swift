@@ -16,7 +16,6 @@ struct LapTimerView: View {
     // MARK: - State Properties
     @State private var timer: Timer?
     @State private var sessionActive = false
-    
     @State private var currentLapStartTime = Date()
     @State private var currentLapNumber = 1
     @State private var currentLapTelemetry: [TelemetryData] = []

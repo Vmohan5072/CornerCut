@@ -9,7 +9,9 @@ struct SessionsView: View {
         NavigationView {
             List {
                 ForEach(sessions) { session in
-                    SessionRowView(session: session)
+                    NavigationLink(destination: SessionDetailView(session: session)) {
+                        SessionRowView(session: session)
+                    }
                 }
                 .onDelete(perform: deleteSession)
             }
@@ -31,8 +33,9 @@ struct SessionsView: View {
         ]
         let newSession = Session(
             trackName: "Sample Track",
-            usingExternalGPS: false, // Example value
-            customName: "Test Session"
+            usingExternalGPS: false,
+            customName: "Test Session",
+            date: Date()
         )
         modelContext.insert(newSession) // Insert into SwiftData context
         try? modelContext.save() // Save the context
@@ -48,7 +51,7 @@ struct SessionRowView: View {
                 .font(.headline)
             Text("Date: \(session.date, style: .date) Time: \(session.date, style: .time)")
             Text("Duration: \(session.laps.reduce(0) { $0 + $1.lapTime }, format: .number) minutes")
-            Text("Custom Name: \(session.customName ?? "None")") // Correctly accesses the customName property
+            Text("Custom Name: \(session.customName ?? "None")") // Safely unwraps the optional
         }
     }
 }

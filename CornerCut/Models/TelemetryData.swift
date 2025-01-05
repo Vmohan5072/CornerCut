@@ -10,7 +10,7 @@ final class TelemetryData {
     var throttle: Double
     var latitude: Double
     var longitude: Double
-    
+
     // Will add more datapoints once I figure out what the OBD reader can pull
 
     init(timestamp: Date,
@@ -19,7 +19,7 @@ final class TelemetryData {
          throttle: Double,
          latitude: Double,
          longitude: Double) {
-        
+
         self.id = UUID()
         self.timestamp = timestamp
         self.speed = speed
