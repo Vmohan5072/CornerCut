@@ -20,7 +20,7 @@ struct LapTimerView: View {
     @State private var currentLapNumber = 1
     @State private var currentLapTelemetry: [TelemetryData] = []
     
-    // 25Hz for racebox
+    //25Hz for racebox
     private let captureInterval = 1.0 / 25.0
     
     var body: some View {
@@ -111,7 +111,7 @@ extension LapTimerView {
         currentLapStartTime = Date()
         currentLapTelemetry = []
         
-        // Schedule a Timer at 25 Hz (interval = 0.04s)
+        //schedule a Timer at 25 Hz (interval = 0.04s)
         timer = Timer.scheduledTimer(withTimeInterval: captureInterval, repeats: true) { _ in
             captureTelemetry()
         }
@@ -172,11 +172,11 @@ extension LapTimerView {
             speedVal = location?.speed ?? 0
         }
         
-        // OBD2 data
+        //OBD2 data
         let rpmVal = obd2Manager.currentRPM
         let throttleVal = obd2Manager.throttle
         
-        // Create new TelemetryData
+        //Create new TelemetryData
         let telemetry = TelemetryData(
             timestamp: Date(),
             speed: speedVal,
@@ -186,7 +186,7 @@ extension LapTimerView {
             longitude: lon
         )
         
-        // Append to current in-memory array
+        //append to current in-memory array
         currentLapTelemetry.append(telemetry)
     }
     
