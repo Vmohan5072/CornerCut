@@ -1,6 +1,7 @@
 import Foundation
 import CoreBluetooth
 import Combine
+import SwiftUI
 
 final class BluetoothManager: NSObject, ObservableObject {
     static let shared = BluetoothManager() // Singleton instance
@@ -13,8 +14,14 @@ final class BluetoothManager: NSObject, ObservableObject {
     @Published var connectionError: String?
     
     // MARK: - User Settings
-    @AppStorage("lastConnectedDeviceUUID") private var lastConnectedDeviceUUID: String?
-    
+    private var lastConnectedDeviceUUID: String? {
+        get {
+            return UserDefaults.standard.string(forKey: "lastConnectedDeviceUUID")
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "lastConnectedDeviceUUID")
+        }
+    }
     // MARK: - Internal Properties
     private var centralManager: CBCentralManager!
     private var targetServiceUUID: CBUUID?
