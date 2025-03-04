@@ -29,22 +29,9 @@
 		2FB018082D2220220028726F /* CornerCutUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CornerCutUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		2F9600582D2A676C00DC5F94 /* Exceptions for "CornerCut" folder in "CornerCut" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Views/Untitled.swift,
-			);
-			target = 2FB017EB2D2220210028726F /* CornerCut */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		2FB017EE2D2220210028726F /* CornerCut */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				2F9600582D2A676C00DC5F94 /* Exceptions for "CornerCut" folder in "CornerCut" target */,
-			);
 			path = CornerCut;
 			sourceTree = "<group>";
 		};
