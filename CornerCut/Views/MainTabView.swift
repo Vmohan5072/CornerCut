@@ -60,7 +60,7 @@ struct MainTabView: View {
 // Preview for SwiftUI canvas
 #Preview {
     MainTabView()
-        .environmentObject(LocationManager.shared)
+        .environmentObject(LocationManager)
         .environmentObject(RaceBoxManager.shared)
         .environmentObject(OBD2Manager.shared)
         .environmentObject(BluetoothManager.shared)

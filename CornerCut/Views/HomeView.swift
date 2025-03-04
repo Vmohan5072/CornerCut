@@ -390,11 +390,3 @@ struct RecentSessionRow: View {
         return String(format: "%01d:%02d.%03d", minutes, seconds, milliseconds)
     }
 }
-
-// MARK: - LocationManager Dummy for Preview
-class LocationManager: NSObject, ObservableObject {
-    @Published var currentLocation: CLLocation?
-    
-    func startUpdatingLocation() {}
-    func stopUpdatingLocation() {}
-}

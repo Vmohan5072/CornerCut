@@ -533,7 +533,7 @@ struct TelemetryOverlayView: View {
                 // Bottom row: Gauges
                 HStack {
                     // Speedometer
-                    GaugeView(
+                    VideoGaugeView(
                         value: speed,
                         maxValue: maxSpeed,
                         title: "MPH",
@@ -548,7 +548,7 @@ struct TelemetryOverlayView: View {
                     Spacer()
                     
                     // RPM gauge
-                    GaugeView(
+                    VideoGaugeView(
                         value: rpm,
                         maxValue: maxRPM,
                         title: "RPM",
@@ -568,7 +568,8 @@ struct TelemetryOverlayView: View {
     }
 }
 
-struct GaugeView: View {
+// Renamed to avoid conflict with existing GaugeView
+struct VideoGaugeView: View {
     var value: Double
     var maxValue: Double
     var title: String
