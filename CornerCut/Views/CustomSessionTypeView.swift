@@ -177,16 +177,39 @@ struct LocationPickerView: View {
     )
     @State private var isSettingPointA = true
     @State private var userTrackingMode: MapUserTrackingMode = .follow
+    @State private var mapInteractionEnabled = true
+    @State private var tapLocation: CGPoint?
     
     let onSave: (CLLocationCoordinate2D?, CLLocationCoordinate2D?) -> Void
     
     var body: some View {
         ZStack {
-            // Map view
-            Map(coordinateRegion: $region, showsUserLocation: true, userTrackingMode: $userTrackingMode, annotationItems: getAnnotations()) { annotation in
-                MapMarker(coordinate: annotation.coordinate, tint: annotation.isPointA ? .blue : .green)
+            // Map view with annotations
+            MapReader { proxy in
+                Map(coordinateRegion: $region,
+                    showsUserLocation: true,
+                    userTrackingMode: $userTrackingMode,
+                    annotationItems: getAnnotations()) { annotation in
+                    MapMarker(coordinate: annotation.coordinate,
+                              tint: annotation.isPointA ? .blue : .green)
+                }
+                .onTapGesture { location in
+                    // Using MapReader's convertToCoordinateFromViewPoint
+                    if let coordinate = proxy.convert(location, from: .local) {
+                        if sessionType == .singlePoint {
+                            locationA = coordinate
+                        } else {
+                            if isSettingPointA {
+                                locationA = coordinate
+                            } else {
+                                locationB = coordinate
+                            }
+                        }
+                    }
+                }
             }
             .edgesIgnoringSafeArea(.bottom)
+            .disabled(!mapInteractionEnabled)
             
             // Bottom Panel
             VStack {
@@ -265,18 +288,13 @@ struct LocationPickerView: View {
                 .padding()
             }
         }
-        .onTapGesture { location in
-            // Convert tap to map coordinate
-            let coordinate = convertToCoordinate(location)
-            
-            if sessionType == .singlePoint {
-                locationA = coordinate
-            } else {
-                if isSettingPointA {
-                    locationA = coordinate
-                } else {
-                    locationB = coordinate
-                }
+        .onAppear {
+            // Use CLLocationManager to get current location for initial region
+            if let userLocation = LocationManager.shared.currentLocation?.coordinate {
+                region = MKCoordinateRegion(
+                    center: userLocation,
+                    span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                )
             }
         }
     }
@@ -296,16 +314,29 @@ struct LocationPickerView: View {
     }
     
     private func setCurrentLocation() {
-        // Get current user location from the map region
-        let currentLocation = region.center
-        
-        if sessionType == .singlePoint {
-            locationA = currentLocation
-        } else {
-            if isSettingPointA {
+        // Get current user location from location manager
+        if let currentLocation = LocationManager.shared.currentLocation?.coordinate {
+            if sessionType == .singlePoint {
                 locationA = currentLocation
             } else {
-                locationB = currentLocation
+                if isSettingPointA {
+                    locationA = currentLocation
+                } else {
+                    locationB = currentLocation
+                }
+            }
+        } else {
+            // Fallback to map region center if no location available
+            let currentLocation = region.center
+            
+            if sessionType == .singlePoint {
+                locationA = currentLocation
+            } else {
+                if isSettingPointA {
+                    locationA = currentLocation
+                } else {
+                    locationB = currentLocation
+                }
             }
         }
     }
@@ -322,13 +353,6 @@ struct LocationPickerView: View {
         } else {
             return locationA != nil && locationB != nil
         }
-    }
-    
-    // This is a stub - in a real implementation, you would convert the tap location to a map coordinate
-    private func convertToCoordinate(_ location: CGPoint) -> CLLocationCoordinate2D {
-        // In a real implementation, this would convert a screen point to a map coordinate
-        // For now, we'll just use the current center coordinate
-        return region.center
     }
 }
 

@@ -314,26 +314,59 @@ struct StatItem: View {
     }
 }
 
+
+// Transform coordinates into identifiable points
+let mapPoints =         coordinates.map { MapPoint(coordinate: $0) }
+
 struct TrackMapView: View {
     @Binding var region: MKCoordinateRegion
     let coordinates: [CLLocationCoordinate2D]
     @Binding var selectedLap: Lap?
     
+    // Create map point struct for annotation items
+    private struct MapPoint: Identifiable {
+        let id = UUID()
+        let coordinate: CLLocationCoordinate2D
+        let type: PointType
+        
+        enum PointType {
+            case start
+            case end
+        }
+    }
+    
+    // Create annotation points for start and end
+    private var annotationPoints: [MapPoint] {
+        var points: [MapPoint] = []
+        
+        if let start = coordinates.first {
+            points.append(MapPoint(coordinate: start, type: .start))
+        }
+        
+        if let end = coordinates.last,
+           end.latitude != coordinates.first?.latitude ||
+           end.longitude != coordinates.first?.longitude {
+            points.append(MapPoint(coordinate: end, type: .end))
+        }
+        
+        return points
+    }
+    
     var body: some View {
         Map(coordinateRegion: $region) {
+            // Add the polyline for the track
             MapPolyline(coordinates: coordinates)
                 .stroke(Color.blue, lineWidth: 3)
             
-            // Start point marker
-            if let start = coordinates.first {
-                Marker("Start", coordinate: start)
-                    .tint(.green)
-            }
-            
-            // End point marker (if different from start)
-            if let end = coordinates.last, end.latitude != coordinates.first?.latitude || end.longitude != coordinates.first?.longitude {
-                Marker("Finish", coordinate: end)
-                    .tint(.red)
+            // Add markers for start and end points
+            ForEach(annotationPoints) { point in
+                if point.type == .start {
+                    Marker("Start", coordinate: point.coordinate)
+                        .tint(.green)
+                } else {
+                    Marker("Finish", coordinate: point.coordinate)
+                        .tint(.red)
+                }
             }
         }
     }

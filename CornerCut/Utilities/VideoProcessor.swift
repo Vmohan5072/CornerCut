@@ -11,23 +11,35 @@ final class VideoExportManager {
     /// - Parameters:
     ///   - exportSession: The `AVAssetExportSession` configured for exporting the video.
     ///   - completion: A closure that returns the URL of the exported file or `nil` if the export failed.
-    func exportVideo(exportSession: AVAssetExportSession?, completion: @escaping (URL?) -> Void) async {
+    func exportVideo(exportSession: AVAssetExportSession?) async -> URL? {
         guard let exportSession = exportSession else {
-            completion(nil)
-            return
+            return nil
         }
 
         // Set the output file URL and file type
-        exportSession.outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("overlayed_video.mp4")
+        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent("overlayed_video_\(Date().timeIntervalSince1970).mp4")
+        exportSession.outputURL = outputURL
         exportSession.outputFileType = .mp4
 
         do {
             // Perform the export asynchronously using the `export` function
             try await exportSession.export()
-            completion(exportSession.outputURL)
+            return exportSession.outputURL
         } catch {
             print("Export failed: \(error.localizedDescription)")
-            completion(nil)
+            return nil
+        }
+    }
+    
+    // This bridging method allows older code to use the async function with a completion handler
+    func exportVideoWithCompletion(exportSession: AVAssetExportSession?, completion: @escaping (URL?) -> Void) {
+        Task {
+            let url = await exportVideo(exportSession: exportSession)
+            
+            // Switch back to the main thread for UI updates
+            await MainActor.run {
+                completion(url)
+            }
         }
     }
 }

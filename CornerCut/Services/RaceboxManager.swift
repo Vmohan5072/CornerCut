@@ -74,6 +74,24 @@ class RaceBoxManager: NSObject, ObservableObject {
         }
         centralManager.stopScan()
     }
+    
+    /// Send a command to the RaceBox device
+    func sendCommand(_ commandData: Data) {
+        guard isConnected, let peripheral = raceBoxPeripheral, let rxCharacteristic = rxCharacteristic else {
+            print("Cannot send command - not connected to RaceBox")
+            return
+        }
+        
+        peripheral.writeValue(commandData, for: rxCharacteristic, type: .withResponse)
+    }
+    
+    /// Process data received from the RaceBox device via Bluetooth
+    func parseRaceBoxData(_ data: Data) {
+        // Add the received data to the buffer
+        receiveBuffer.append(data)
+        // Process the buffer to extract and handle complete packets
+        processReceiveBuffer()
+    }
 }
 
 // MARK: - CBCentralManagerDelegate
@@ -399,16 +417,6 @@ extension RaceBoxManager {
             self.rotationZ = rotationZDegS
             self.batteryLevel = batteryPercentage
         }
-    }
-    
-    /// Send a command to the RaceBox device
-    func sendCommand(_ commandData: Data) {
-        guard isConnected, let peripheral = raceBoxPeripheral, let rxCharacteristic = rxCharacteristic else {
-            print("Cannot send command - not connected to RaceBox")
-            return
-        }
-        
-        peripheral.writeValue(commandData, for: rxCharacteristic, type: .withResponse)
     }
 }
 

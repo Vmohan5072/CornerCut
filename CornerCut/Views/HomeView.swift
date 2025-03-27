@@ -1,8 +1,10 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeView: View {
     // MARK: - Environment Objects
+    @EnvironmentObject private var locationManager: LocationManager
     @EnvironmentObject private var raceBoxManager: RaceBoxManager
     @EnvironmentObject private var obd2Manager: OBD2Manager
     
@@ -328,19 +330,22 @@ struct HomeView: View {
     }
     
     private func startTimerForSession(_ session: Session) {
-        // Navigate to the LapTimerView
+        // Create a hosted controller with the required parameters
         let hostedLapTimerView = UIHostingController(rootView:
-            LapTimerView(session: session)
-                .environmentObject(locationManager)
-                .environmentObject(raceBoxManager)
-                .environmentObject(obd2Manager)
+            LapTimerView(
+                locationManager: LocationManager.shared,
+                obd2Manager: OBD2Manager.shared,
+                raceBoxManager: RaceBoxManager.shared,
+                session: session
+            )
         )
         
-        // Make it full screen
-        hostedLapTimerView.modalPresentationStyle = .fullScreen
-        
-        // Present it
-        UIApplication.shared.windows.first?.rootViewController?.present(hostedLapTimerView, animated: true)
+        // Present it as full screen
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            hostedLapTimerView.modalPresentationStyle = .fullScreen
+            rootViewController.present(hostedLapTimerView, animated: true)
+        }
     }
 }
 

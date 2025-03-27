@@ -19,7 +19,7 @@ struct CornerCutApp: App {
     }()
     
     // Managers
-    @StateObject var locationManager = LocationManager()
+    @StateObject private var locationManager = LocationManager.shared
     @StateObject private var raceBoxManager = RaceBoxManager.shared
     @StateObject private var obd2Manager = OBD2Manager.shared
     @StateObject private var bluetoothManager = BluetoothManager.shared
