@@ -98,15 +98,16 @@ struct ActiveSessionView: View {
                     
                     // Current lap time - large display
                     Text(viewModel.formattedCurrentLapTime)
-                        .font(.system(size: 70, weight: .bold, design: .rounded))
+                        .font(.system(size: 70, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
-                        .monospacedDigit()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
                     
                     // Delta to best lap
                     Text(viewModel.formattedDeltaTime)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(size: 32, weight: .bold, design: .monospaced))
                         .foregroundColor(viewModel.isDeltaPositive ? .red : .green)
-                        .padding(.bottom, 10)
+                        .padding(.bottom, 30)
                     
                     // Sector times
                     if viewModel.hasSectors {

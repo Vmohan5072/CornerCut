@@ -1,6 +1,6 @@
 //
 //  TrackDetailView.swift
-//  RaceBoxLapTimer
+//  CornerCut
 //
 
 import SwiftUI
@@ -10,11 +10,13 @@ struct TrackDetailView: View {
     let track: Track
     @State private var showingSessionOptions = false
     @State private var region: MKCoordinateRegion
+    @State private var trackSessions: [LapSession] = []
     @Environment(\.presentationMode) var presentationMode
     
     init(track: Track) {
         self.track = track
         _region = State(initialValue: track.getRegion())
+        _trackSessions = State(initialValue: SessionManager.shared.getSessionsForTrack(trackId: track.id))
     }
     
     var body: some View {
@@ -82,21 +84,35 @@ struct TrackDetailView: View {
                                 .fontWeight(.semibold)
                         }
                     }
-                    
-                    Divider()
-                    
-                    // Previous sessions on this track
-                    Text("Previous Sessions")
-                        .font(.headline)
-                    
-                    // Placeholder for session history
-                    // This would be populated with actual session data
-                    Text("No previous sessions")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .italic()
                 }
                 .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(12)
+                .shadow(radius: 1)
+                .padding(.horizontal)
+                
+                // Previous sessions on this track
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Previous Sessions")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    if trackSessions.isEmpty {
+                        Text("No previous sessions")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .italic()
+                            .padding(.horizontal)
+                    } else {
+                        ForEach(trackSessions) { session in
+                            NavigationLink(destination: SessionReviewView(session: session)) {
+                                TrackSessionRow(session: session)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                }
+                .padding(.vertical)
             }
         }
         .navigationBarTitle("", displayMode: .inline)
@@ -127,9 +143,16 @@ struct TrackDetailView: View {
                     .default(Text("Race")) {
                         startSession(type: .race)
                     },
+                    .default(Text("Testing")) {
+                        startSession(type: .testing)
+                    },
                     .cancel()
                 ]
             )
+        }
+        .onAppear {
+            // Refresh sessions when view appears
+            trackSessions = SessionManager.shared.getSessionsForTrack(trackId: track.id)
         }
     }
     
@@ -163,12 +186,19 @@ struct TrackDetailView: View {
     }
     
     private func startSession(type: SessionType) {
-        // This would navigate to the ActiveSessionView with the selected track and session type
-        // For now, we'll just print the info
-        print("Starting \(type.rawValue) session on \(track.name)")
+        // Create a view model for the session
+        let sessionViewModel = SessionViewModel()
         
-        // In a real implementation:
-        // Navigate to ActiveSessionView with the track and session type
+        // Navigate to the active session view
+        let activeSessionView = ActiveSessionView(viewModel: sessionViewModel)
+        
+        // Start the session with the selected track and type
+        sessionViewModel.startSession(track: track, sessionType: type)
+        
+        // In a real implementation, we would navigate to the active session view
+        // This would require a coordinator pattern or another navigation approach
+        // For now, we'll simply print the info
+        print("Starting \(type.rawValue) session on \(track.name)")
     }
 }
 
@@ -179,10 +209,70 @@ struct TrackPointAnnotation: Identifiable {
     let isEnd: Bool
 }
 
-enum SessionType: String {
-    case practice = "Practice"
-    case qualifying = "Qualifying"
-    case race = "Race"
+struct TrackSessionRow: View {
+    let session: LapSession
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(session.sessionType.rawValue)
+                    .font(.subheadline)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(getSessionTypeColor(session.sessionType).opacity(0.2))
+                    .cornerRadius(4)
+                
+                Spacer()
+                
+                Text(formatDate(session.startTime))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            HStack {
+                Text("\(session.lapCount) laps")
+                    .font(.subheadline)
+                
+                Spacer()
+                
+                if let bestLap = session.bestLap {
+                    Text("Best: \(bestLap.formattedLapTime)")
+                        .font(.system(.subheadline, design: .monospaced))
+                        .foregroundColor(.green)
+                } else {
+                    Text("No valid laps")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .italic()
+                }
+            }
+        }
+        .padding()
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(radius: 1)
+        .padding(.horizontal)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+    
+    private func getSessionTypeColor(_ type: SessionType) -> Color {
+        switch type {
+        case .practice:
+            return .blue
+        case .qualifying:
+            return .orange
+        case .race:
+            return .red
+        case .testing:
+            return .purple
+        }
+    }
 }
 
 struct TrackDetailView_Previews: PreviewProvider {

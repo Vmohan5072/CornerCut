@@ -1,6 +1,6 @@
 //
 //  SessionViewModel.swift
-//  RaceBoxLapTimer
+//  CornerCut
 //
 
 import Foundation
@@ -70,6 +70,7 @@ class SessionViewModel: ObservableObject {
     private var sector1Time: TimeInterval?
     private var sector2Time: TimeInterval?
     private var sector3Time: TimeInterval?
+    private var lastSpeed: Double?
     
     private var sessionManager = SessionManager.shared
     private var bluetoothManager: BluetoothManager?
@@ -196,8 +197,6 @@ class SessionViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-        
-        // TODO: Add OBD connection subscribe when implemented
     }
     
     private func setupTelemetrySubscriptions() {
@@ -227,6 +226,72 @@ class SessionViewModel: ObservableObject {
                     // Process the data for lap/sector timing
                     let telemetryPoint = TelemetryData(fromLocation: location, sessionId: UUID())
                     self.sessionManager.processTelemetryData(telemetryPoint)
+                }
+                .store(in: &cancellables)
+        }
+        
+        // Subscribe to OBD data if enabled
+        if settingsManager.isOBDEnabled, let bluetoothManager = bluetoothManager {
+            bluetoothManager.obdManager.$connectionState
+                .receive(on: RunLoop.main)
+                .sink { [weak self] state in
+                    switch state {
+                    case .connected:
+                        self?.hasOBDConnection = true
+                    default:
+                        self?.hasOBDConnection = false
+                    }
+                }
+                .store(in: &cancellables)
+            
+            bluetoothManager.obdManager.$vehicleData
+                .receive(on: RunLoop.main)
+                .sink { [weak self] vehicleData in
+                    guard let self = self else { return }
+                    
+                    // Update OBD-related properties
+                    if let rpm = vehicleData.rpm {
+                        self.rpm = rpm
+                    }
+                    
+                    if let throttlePos = vehicleData.throttlePosition {
+                        self.throttlePosition = throttlePos
+                    }
+                    
+                    // Estimate brake position based on deceleration
+                    if let currentSpeed = self.lastSpeed,
+                       let newSpeed = vehicleData.speed,
+                       currentSpeed > newSpeed,
+                       let timestamp = self.lastUpdateTime {
+                        
+                        let timeDelta = Date().timeIntervalSince(timestamp)
+                        if timeDelta > 0 {
+                            let deceleration = (currentSpeed - newSpeed) / timeDelta
+                            // Scale deceleration to brake percentage (adjust thresholds as needed)
+                            let maxDecel = 10.0 // m/s²
+                            let brakePercentage = min(100, max(0, deceleration / maxDecel * 100))
+                            self.brakePosition = brakePercentage
+                        }
+                    } else {
+                        // If we're not decelerating, gradually reduce brake percentage
+                        if self.brakePosition > 0 {
+                            self.brakePosition = max(0, self.brakePosition - 5)
+                        }
+                    }
+                    
+                    // Update gear
+                    if let gear = vehicleData.gear {
+                        self.currentGear = String(gear)
+                    } else {
+                        self.currentGear = "N"
+                    }
+                    
+                    // Store current speed for future comparisons
+                    self.lastSpeed = vehicleData.speed
+                    self.lastUpdateTime = Date()
+                    
+                    // Update vehicle data
+                    self.updateVehicleData()
                 }
                 .store(in: &cancellables)
         }
@@ -323,6 +388,45 @@ class SessionViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+    
+    private func updateVehicleData() {
+        // Prioritize OBD speed data if available, otherwise use GPS speed
+        if hasOBDConnection, let obdSpeed = bluetoothManager?.obdManager.vehicleData.speed {
+            // Convert km/h to appropriate units
+            if settingsManager.unitSystem == .imperial {
+                speed = obdSpeed * 0.621371 // Convert to mph
+                displaySpeed = speed
+            } else {
+                speed = obdSpeed
+                displaySpeed = speed
+            }
+        }
+        
+        // Use OBD data for RPM, throttle, and gear when available
+        if hasOBDConnection {
+            let vehicleData = bluetoothManager?.obdManager.vehicleData
+            
+            if let rpm = vehicleData?.rpm {
+                self.rpm = rpm
+            }
+            
+            if let throttle = vehicleData?.throttlePosition {
+                self.throttlePosition = throttle
+            }
+            
+            if let gear = vehicleData?.gear {
+                self.currentGear = String(gear)
+            } else {
+                self.currentGear = "N"
+            }
+        }
+        
+        // Always use RaceBox for G-force data if available
+        if let raceBoxData = bluetoothManager?.raceBoxManager.latestData {
+            lateralG = raceBoxData.gForceY
+            longitudinalG = raceBoxData.gForceX
+        }
     }
     
     private func startLapTimer() {
