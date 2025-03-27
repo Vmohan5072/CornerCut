@@ -1,9 +1,6 @@
-
 //
 //  BluetoothManager.swift
 //  RaceBoxLapTimer
-//
-//  Created for RaceBox Lap Timer App
 //
 
 import Foundation
@@ -21,7 +18,7 @@ class BluetoothManager: ObservableObject {
     // MARK: - Device Managers
     
     let raceBoxManager = RaceBoxManager()
-    var obdManager: OBDManager?
+    let obdManager = OBDManager()
     
     // MARK: - Private Properties
     
@@ -31,7 +28,7 @@ class BluetoothManager: ObservableObject {
     // MARK: - Initialization
     
     init() {
-        setupRaceBoxManagerSubscriptions()
+        setupManagerSubscriptions()
         centralManager = CBCentralManager(delegate: self, queue: nil)
     }
     
@@ -68,15 +65,40 @@ class BluetoothManager: ObservableObject {
         raceBoxManager.disconnect()
     }
     
+    func connectToOBD(_ peripheral: CBPeripheral) {
+        stopScanningForDevices()
+        obdManager.connect(to: peripheral)
+    }
+    
+    func disconnectOBD() {
+        obdManager.disconnect()
+    }
+    
     // MARK: - Private Methods
     
-    private func setupRaceBoxManagerSubscriptions() {
+    private func setupManagerSubscriptions() {
+        // RaceBox manager state changes
         raceBoxManager.$connectionState
             .sink { [weak self] state in
                 switch state {
                 case .connected:
                     // Read device info when connected
                     self?.raceBoxManager.readDeviceInfo()
+                default:
+                    break
+                }
+            }
+            .store(in: &cancellables)
+        
+        // OBD manager state changes
+        obdManager.$connectionState
+            .sink { [weak self] state in
+                switch state {
+                case .connected:
+                    // Start polling when connected
+                    self?.obdManager.startPolling()
+                case .disconnected:
+                    break
                 default:
                     break
                 }
