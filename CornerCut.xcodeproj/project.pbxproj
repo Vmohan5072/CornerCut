@@ -30,7 +30,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2FB017EE2D2220210028726F /* CornerCut */ = {
+		2F08B6072D95008400045D63 /* CornerCut */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = CornerCut;
 			sourceTree = "<group>";
@@ -75,7 +75,7 @@
 		2FB017E32D2220210028726F = {
 			isa = PBXGroup;
 			children = (
-				2FB017EE2D2220210028726F /* CornerCut */,
+				2F08B6072D95008400045D63 /* CornerCut */,
 				2FB018012D2220220028726F /* CornerCutTests */,
 				2FB0180B2D2220220028726F /* CornerCutUITests */,
 				2FB017ED2D2220210028726F /* Products */,
@@ -108,7 +108,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2FB017EE2D2220210028726F /* CornerCut */,
+				2F08B6072D95008400045D63 /* CornerCut */,
 			);
 			name = CornerCut;
 			packageProductDependencies = (
@@ -175,6 +175,7 @@
 				TargetAttributes = {
 					2FB017EB2D2220210028726F = {
 						CreatedOnToolsVersion = 16.2;
+						LastSwiftMigration = 1620;
 					};
 					2FB017FD2D2220220028726F = {
 						CreatedOnToolsVersion = 16.2;
@@ -393,6 +394,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CornerCut/Preview Content\"";
@@ -412,6 +414,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = vmohan5072.CornerCut;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -422,6 +425,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CornerCut/Preview Content\"";
