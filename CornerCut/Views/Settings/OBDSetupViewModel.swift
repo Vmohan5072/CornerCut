@@ -1,8 +1,3 @@
-//
-//  OBDSetupViewModel.swift
-//  CornerCut
-//
-
 import Foundation
 import CoreBluetooth
 import Combine
@@ -120,7 +115,7 @@ class OBDSetupViewModel: ObservableObject {
                     self.isConnected = false
                     self.connectionStatusText = "Connection Failed"
                     self.connectionStatusColor = Color.red
-                    print("OBD connection error: \(error.localizedDescription)")
+                    print("OBD connection error: \(error)")
                     
                 default:
                     self.isConnected = false

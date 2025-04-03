@@ -1,8 +1,3 @@
-//
-//  SettingsViewModel.swift
-//  CornerCut
-//
-
 import Foundation
 import Combine
 import SwiftUI

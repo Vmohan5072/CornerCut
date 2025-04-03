@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocation
 
 struct LapData: Identifiable, Codable {
     var id: UUID

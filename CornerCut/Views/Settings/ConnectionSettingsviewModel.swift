@@ -33,7 +33,7 @@ class ConnectionSettingsViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(bluetoothManager: BluetoothManager = BluetoothManager.shared,
+    init(bluetoothManager: BluetoothManager = BluetoothManager(),
          settingsManager: SettingsManager = SettingsManager.shared) {
         self.bluetoothManager = bluetoothManager
         self.settingsManager = settingsManager
@@ -88,19 +88,11 @@ class ConnectionSettingsViewModel: ObservableObject {
     }
     
     func connectToOBD(_ peripheral: CBPeripheral) {
-        // This would be implemented once you have your OBD manager set up
         bluetoothManager.connectToOBD(peripheral)
-        
-        // For now, just show a placeholder message
-        showAlert(title: "OBD Support", message: "OBD connection will be implemented in a future update.")
     }
     
     func disconnectOBD() {
-        // This would be implemented once you have your OBD manager set up
         bluetoothManager.disconnectOBD()
-        
-        isOBDConnected = false
-        connectedOBDName = nil
     }
     
     // MARK: - Private Methods
