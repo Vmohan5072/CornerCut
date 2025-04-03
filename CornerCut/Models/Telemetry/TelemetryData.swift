@@ -1,8 +1,3 @@
-//
-//  TelemetryData.swift
-//  RaceBoxLapTimer
-//
-
 import Foundation
 import CoreLocation
 

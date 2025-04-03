@@ -1,12 +1,6 @@
-//
-//  ConnectionSettingsView.swift
-//  RaceBoxLapTimer
-//
-//  Created for RaceBox Lap Timer App
-//
-
 import SwiftUI
 import CoreBluetooth
+import CoreLocation
 
 struct ConnectionSettingsView: View {
     @StateObject private var viewModel = ConnectionSettingsViewModel()
@@ -47,7 +41,7 @@ struct ConnectionSettingsView: View {
                         }
                     }
                     .sheet(isPresented: $showingDeviceScanner) {
-                        DeviceScannerView(
+                        DeviceScannerSheet(
                             isScanning: $viewModel.isScanning,
                             discoveredDevices: viewModel.discoveredDevices,
                             onDeviceSelected: { peripheral in
@@ -91,7 +85,7 @@ struct ConnectionSettingsView: View {
                         }
                     }
                     .sheet(isPresented: $showingDeviceScanner) {
-                        DeviceScannerView(
+                        DeviceScannerSheet(
                             isScanning: $viewModel.isScanning,
                             discoveredDevices: viewModel.discoveredDevices,
                             onDeviceSelected: { peripheral in
@@ -175,7 +169,8 @@ struct ConnectionSettingsView: View {
     }
 }
 
-struct DeviceScannerView: View {
+// Rename to avoid conflict with other DeviceScanner views
+struct DeviceScannerSheet: View {
     @Binding var isScanning: Bool
     let discoveredDevices: [CBPeripheral]
     let onDeviceSelected: (CBPeripheral) -> Void
@@ -257,11 +252,6 @@ struct ConnectionProgressView: View {
             .shadow(radius: 10)
         }
     }
-}
-
-enum GPSSource: String, CaseIterable {
-    case `internal` = "internal"
-    case raceBox = "raceBox"
 }
 
 struct ConnectionSettingsView_Previews: PreviewProvider {

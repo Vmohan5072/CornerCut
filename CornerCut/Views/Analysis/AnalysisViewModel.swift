@@ -1,11 +1,7 @@
-//
-//  AnalysisViewModel.swift
-//  CornerCut
-//
-
 import Foundation
 import Combine
 import SwiftUI
+import CoreLocation
 
 class AnalysisViewModel: ObservableObject {
     // MARK: - Published Properties
@@ -106,16 +102,16 @@ class AnalysisViewModel: ObservableObject {
             let throttle = max(0, 50 + 50 * sin(progress * .pi * 2)) // Throttle varies from 0 to 100%
             let brake = max(0, -50 + 50 * sin(progress * .pi * 2)) // Brake is inverse of throttle
             
-            // Create a sample point
-            let coordinate = CLLocationCoordinate2D(latitude: 37.3352 + progress * 0.01,
-                                                   longitude: -121.8811 + progress * 0.01)
+            // Create a sample point with simulated coordinates
+            let latitude = 37.3352 + progress * 0.01
+            let longitude = -121.8811 + progress * 0.01
             
             let point = TelemetryData(
                 id: UUID(),
                 sessionId: UUID(), // This would be the actual session ID in real code
                 lapId: lap.id,
                 timestamp: timestamp,
-                location: GeoPoint(coordinate: coordinate),
+                location: GeoPoint(latitude: latitude, longitude: longitude),
                 speed: speed / 3.6, // Convert kph to m/s
                 heading: 0,
                 altitude: 0,

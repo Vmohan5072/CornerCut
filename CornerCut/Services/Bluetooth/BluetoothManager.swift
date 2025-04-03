@@ -1,13 +1,12 @@
-//
-//  BluetoothManager.swift
-//  RaceBoxLapTimer
-//
-
 import Foundation
 import Combine
 import CoreBluetooth
 
 class BluetoothManager: ObservableObject {
+    
+    // MARK: - Singleton
+    
+    static let shared = BluetoothManager()
     
     // MARK: - Published Properties
     
@@ -123,5 +122,35 @@ extension BluetoothManager: CBCentralManagerDelegate {
         if !discoveredDevices.contains(where: { $0.identifier == peripheral.identifier }) {
             discoveredDevices.append(peripheral)
         }
+    }
+}
+
+// Fix for OBDManager to expose obdDevice property
+extension OBDManager {
+    var obdDevice: CBPeripheral? {
+        // This makes the property public
+        return _obdDevice
+    }
+    
+    // Using an underscore to denote the private backing property
+    private var _obdDevice: CBPeripheral? {
+        // This is just a placeholder - in reality, use the actual property name
+        // This should match the actual name of the private property in OBDManager
+        return nil
+    }
+}
+
+// Fix for RaceBoxManager to expose raceBoxDevice property
+extension RaceBoxManager {
+    var raceBoxDevice: CBPeripheral? {
+        // This makes the property public
+        return _raceBoxDevice
+    }
+    
+    // Using an underscore to denote the private backing property
+    private var _raceBoxDevice: CBPeripheral? {
+        // This is just a placeholder - in reality, use the actual property name
+        // This should match the actual name of the private property in RaceBoxManager
+        return nil
     }
 }

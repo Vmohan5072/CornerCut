@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocation
 
 // MARK: - RaceBox Device Types
 enum RaceBoxDeviceType: String {

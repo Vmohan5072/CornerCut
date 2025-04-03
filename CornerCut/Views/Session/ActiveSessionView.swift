@@ -1,8 +1,3 @@
-//
-//  ActiveSessionView.swift
-//  RaceBoxLapTimer
-//
-
 import SwiftUI
 import CoreLocation
 
@@ -167,7 +162,7 @@ struct ActiveSessionView: View {
                         }
                         
                         // G-Force
-                        GForceView(
+                        GForceIndicatorView(
                             lateralG: viewModel.lateralG,
                             longitudinalG: viewModel.longitudinalG,
                             maxG: 2.0
@@ -222,16 +217,6 @@ struct ActiveSessionView: View {
             .frame(width: geometry.size.width, height: geometry.size.height)
             .gesture(doubleTapGesture)
             .statusBar(hidden: true)
-            .onAppear {
-                // Lock to landscape orientation
-                UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
-                UINavigationController.attemptRotationToDeviceOrientation()
-            }
-            .onDisappear {
-                // Allow all orientations again
-                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
-                UINavigationController.attemptRotationToDeviceOrientation()
-            }
         }
         .navigationBarHidden(true)
     }
@@ -347,53 +332,3 @@ struct LinearGaugeView: View {
         }
     }
 }
-
-struct GForceView: View {
-    let lateralG: Double
-    let longitudinalG: Double
-    let maxG: Double
-    
-    private var normalizedLateralG: Double {
-        return lateralG / maxG
-    }
-    
-    private var normalizedLongitudinalG: Double {
-        return longitudinalG / maxG
-    }
-    
-    var body: some View {
-        ZStack {
-            // Background circle
-            Circle()
-                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                .frame(width: 100, height: 100)
-            
-            // Cross lines
-            Path { path in
-                path.move(to: CGPoint(x: 50, y: 0))
-                path.addLine(to: CGPoint(x: 50, y: 100))
-                path.move(to: CGPoint(x: 0, y: 50))
-                path.addLine(to: CGPoint(x: 100, y: 50))
-            }
-            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-            
-            // G-force marker
-            Circle()
-                .fill(Color.red)
-                .frame(width: 12, height: 12)
-                .offset(
-                    x: CGFloat(normalizedLateralG * 40),
-                    y: CGFloat(-normalizedLongitudinalG * 40)
-                )
-            
-            // Label
-            Text("G-FORCE")
-                .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.8))
-                .offset(y: 55)
-        }
-        .frame(width: 100, height: 100)
-    }
-}
-
-

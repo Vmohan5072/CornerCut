@@ -1,8 +1,3 @@
-//
-//  SessionHistoryView.swift
-//  CornerCut
-//
-
 import SwiftUI
 
 struct SessionHistoryView: View {
@@ -33,7 +28,7 @@ struct SessionHistoryView: View {
             }
             
             // Search bar
-            SearchBar(text: $searchText)
+            SearchBarView(text: $searchText, placeholder: "Search sessions")
                 .padding(.horizontal)
                 .onChange(of: searchText) { _ in
                     viewModel.filterSessions(by: selectedFilter, searchText: searchText)
@@ -76,38 +71,6 @@ struct SessionHistoryView: View {
         .navigationTitle("Session History")
         .onAppear {
             viewModel.loadSessions()
-        }
-    }
-}
-
-struct SearchBar: View {
-    @Binding var text: String
-    
-    var body: some View {
-        HStack {
-            TextField("Search sessions", text: $text)
-                .padding(7)
-                .padding(.horizontal, 25)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-                .overlay(
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.gray)
-                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 8)
-                        
-                        if !text.isEmpty {
-                            Button(action: {
-                                text = ""
-                            }) {
-                                Image(systemName: "multiply.circle.fill")
-                                    .foregroundColor(.gray)
-                                    .padding(.trailing, 8)
-                            }
-                        }
-                    }
-                )
         }
     }
 }
@@ -222,14 +185,6 @@ class SessionHistoryViewModel: ObservableObject {
             
             // In a real app, you would also delete from persistence
             // sessionManager.deleteSession(sessionId)
-        }
-    }
-}
-
-struct SessionHistoryView_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            SessionHistoryView()
         }
     }
 }

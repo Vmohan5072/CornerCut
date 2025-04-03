@@ -1,10 +1,3 @@
-//
-//  ConnectionSettingsViewModel.swift
-//  RaceBoxLapTimer
-//
-//  Created for RaceBox Lap Timer App
-//
-
 import Foundation
 import Combine
 import CoreBluetooth
@@ -40,7 +33,7 @@ class ConnectionSettingsViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(bluetoothManager: BluetoothManager = BluetoothManager(),
+    init(bluetoothManager: BluetoothManager = BluetoothManager.shared,
          settingsManager: SettingsManager = SettingsManager.shared) {
         self.bluetoothManager = bluetoothManager
         self.settingsManager = settingsManager
@@ -96,7 +89,7 @@ class ConnectionSettingsViewModel: ObservableObject {
     
     func connectToOBD(_ peripheral: CBPeripheral) {
         // This would be implemented once you have your OBD manager set up
-        // bluetoothManager.connectToOBD(peripheral)
+        bluetoothManager.connectToOBD(peripheral)
         
         // For now, just show a placeholder message
         showAlert(title: "OBD Support", message: "OBD connection will be implemented in a future update.")
@@ -104,7 +97,7 @@ class ConnectionSettingsViewModel: ObservableObject {
     
     func disconnectOBD() {
         // This would be implemented once you have your OBD manager set up
-        // bluetoothManager.disconnectOBD()
+        bluetoothManager.disconnectOBD()
         
         isOBDConnected = false
         connectedOBDName = nil

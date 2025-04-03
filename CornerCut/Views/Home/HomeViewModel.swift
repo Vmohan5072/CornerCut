@@ -1,8 +1,3 @@
-//
-//  HomeViewModel.swift
-//  CornerCut
-//
-
 import Foundation
 import Combine
 
@@ -61,6 +56,16 @@ class HomeViewModel: ObservableObject {
             .sorted(by: { $0.lastUsedDate! > $1.lastUsedDate! })
             .prefix(3)
             .map { $0 }
+        
+        // If we have fewer than 3 tracks with usage data, just add the most recent tracks
+        if favoriteTracks.count < 3 {
+            let remainingTracks = allTracks
+                .filter { !favoriteTracks.contains($0) }
+                .sorted(by: { $0.createdDate > $1.createdDate })
+                .prefix(3 - favoriteTracks.count)
+            
+            favoriteTracks.append(contentsOf: remainingTracks)
+        }
     }
     
     private func calculateUserStats() {
@@ -79,8 +84,15 @@ class HomeViewModel: ObservableObject {
         }
         
         // Calculate total distance (if available)
-        // This would require telemetry data which we're simulating for now
-        stats.totalDistance = 500.0 // Mock distance in km
+        // In a real implementation, this would use actual telemetry data
+        // For now, let's just estimate based on track lengths and lap counts
+        var totalDistance = 0.0
+        for session in allSessions {
+            if let track = trackManager.getTrack(id: session.trackId), let trackLength = track.trackLength {
+                totalDistance += Double(session.lapCount) * (trackLength / 1000.0) // Convert to km
+            }
+        }
+        stats.totalDistance = totalDistance
         
         self.stats = stats
     }

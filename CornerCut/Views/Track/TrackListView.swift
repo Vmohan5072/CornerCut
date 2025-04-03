@@ -129,12 +129,13 @@ struct TrackRow: View {
     }
 }
 
-struct SearchBar: View {
+struct SearchBarView: View {
     @Binding var text: String
+    var placeholder: String = "Search"
     
     var body: some View {
         HStack {
-            TextField("Search tracks", text: $text)
+            TextField(placeholder, text: $text)
                 .padding(7)
                 .padding(.horizontal, 25)
                 .background(Color(.systemGray6))
@@ -161,10 +162,11 @@ struct SearchBar: View {
     }
 }
 
-struct TrackListView_Previews: PreviewProvider {
+struct SearchBarView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationView {
-            TrackListView()
+        SearchBarView(text: .constant(""))
+            .previewLayout(.sizeThatFits)
+            .padding()
         }
     }
-}
+
